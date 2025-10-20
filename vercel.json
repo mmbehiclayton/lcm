@@ -1,10 +1,11 @@
 {
   "functions": {
     "src/app/api/**/*.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
-  "buildCommand": "pnpm run vercel-build",
+  
+  "buildCommand": "prisma generate && prisma db push && next build",
   "installCommand": "pnpm install",
   "framework": "nextjs",
   "env": {
