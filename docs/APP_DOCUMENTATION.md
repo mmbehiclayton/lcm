@@ -1881,9 +1881,11 @@ Request → NextAuth middleware → Verify JWT → Attach session → Allow/Deny
 
 ### 11.1 Environment Variables
 
+#### Local Development (.env.local)
 ```env
-# Database
-DATABASE_URL="mysql://user:password@localhost:3306/lcm_database"
+# Database (PostgreSQL)
+DATABASE_URL="postgresql://user:password@localhost:5432/lcm_analytics"
+DIRECT_URL="postgresql://user:password@localhost:5432/lcm_analytics"
 
 # NextAuth
 NEXTAUTH_SECRET="your-secret-key-here"
@@ -1893,13 +1895,49 @@ NEXTAUTH_URL="http://localhost:3000"
 MARKET_DATA_API_KEY="your-api-key"
 ```
 
+#### Vercel Environment Variables
+```env
+# Database (Vercel Postgres)
+DATABASE_URL="@postgres_url"
+DIRECT_URL="@postgres_url"
+
+# NextAuth
+NEXTAUTH_SECRET="@nextauth_secret"
+NEXTAUTH_URL="@nextauth_url"
+```
+
 ### 11.2 Deployment Options
 
 #### Vercel (Recommended)
 ```bash
-1. Connect GitHub repository
-2. Configure environment variables
-3. Deploy
+1. Connect GitHub repository to Vercel
+2. Add Vercel Postgres database
+3. Configure environment variables in Vercel dashboard:
+   - DATABASE_URL: @postgres_url
+   - DIRECT_URL: @postgres_url  
+   - NEXTAUTH_SECRET: @nextauth_secret
+   - NEXTAUTH_URL: @nextauth_url
+4. Deploy (uses vercel-build script with Prisma)
+```
+
+**Vercel Configuration (vercel.json):**
+```json
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "buildCommand": "pnpm run vercel-build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "env": {
+    "DATABASE_URL": "@postgres_url",
+    "DIRECT_URL": "@postgres_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret",
+    "NEXTAUTH_URL": "@nextauth_url"
+  }
+}
 ```
 
 #### Docker
@@ -1927,6 +1965,30 @@ CMD ["npm", "start"]
 
 ### 11.3 Database Setup
 
+#### Local Development
+```bash
+# Install dependencies
+pnpm install
+
+# Generate Prisma client
+pnpm run db:generate
+
+# Push schema to database
+pnpm run db:push
+
+# Seed with sample data (optional)
+pnpm run db:seed
+```
+
+#### Vercel Deployment
+```bash
+# Vercel automatically runs:
+# 1. pnpm install
+# 2. pnpm run vercel-build (includes prisma generate && prisma db push)
+# 3. next build
+```
+
+#### Manual Database Setup
 ```bash
 # Initialize database
 npx prisma migrate deploy

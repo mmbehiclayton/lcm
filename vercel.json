@@ -4,14 +4,19 @@
       "maxDuration": 30
     }
   },
+  "buildCommand": "pnpm run vercel-build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
   "env": {
     "DATABASE_URL": "@postgres_url",
+    "DIRECT_URL": "@postgres_url",
     "NEXTAUTH_SECRET": "@nextauth_secret",
     "NEXTAUTH_URL": "@nextauth_url"
   },
   "build": {
     "env": {
-      "DATABASE_URL": "@postgres_url"
+      "DATABASE_URL": "@postgres_url",
+      "DIRECT_URL": "@postgres_url"
     }
   }
 }
