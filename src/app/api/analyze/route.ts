@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
+import {
+  calculateEnhancedPropertyScores,
+  getEnhancedStrategyWeights,
+  calculateEnhancedPortfolioHealth,
+  assessEnhancedRiskLevel,
+  calculatePerformanceGrade,
+  generateEnhancedRecommendations,
+  type PropertyData,
+  type AnalysisResponse
+} from '@/lib/analytics-engine';
 export async function POST(req: NextRequest) {
   try {
     const { userId, strategy }: { userId: string; strategy: string } = await req.json();
@@ -23,10 +31,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Transform database properties to match the expected Property interface
-    const properties = dbProperties.map(prop => ({
+    const properties: PropertyData[] = dbProperties.map(prop => ({
       property_id: prop.propertyId,
       name: prop.name,
-      type: prop.type as 'Office' | 'Retail' | 'Industrial' | 'Residential',
+      type: prop.type.toLowerCase() as 'office' | 'retail' | 'industrial' | 'residential',
       location: prop.location,
       purchase_price: prop.purchasePrice || 0,
       current_value: prop.currentValue || 0,
@@ -38,24 +46,37 @@ export async function POST(req: NextRequest) {
       maintenance_score: prop.maintenanceScore || undefined
     }));
 
-          // Call Python service for enhanced portfolio analysis
-          const response = await fetch(`${PYTHON_SERVICE_URL}/portfolio/analyze`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              properties,
-              strategy,
-              analysis_date: new Date().toISOString().split('T')[0]
-            }),
-          });
-
-    if (!response.ok) {
-      throw new Error(`Python service error: ${response.statusText}`);
+    // Calculate individual scores with enhanced algorithms
+    const propertyScores = [];
+    for (const property of properties) {
+      const scores = calculateEnhancedPropertyScores(property, strategy);
+      propertyScores.push({
+        property_id: property.property_id,
+        lease_score: scores.lease_score,
+        occupancy_score: scores.occupancy_score,
+        noi_score: scores.noi_score,
+        energy_score: scores.energy_score,
+        capex_score: scores.capex_score,
+        sustainability_score: scores.sustainability_score,
+        market_score: scores.market_score
+      });
     }
-
-    const analysisResult = await response.json();
+    
+    // Calculate portfolio health with strategy-specific weighting
+    const weights = getEnhancedStrategyWeights(strategy);
+    const portfolioHealth = calculateEnhancedPortfolioHealth(propertyScores, weights);
+    
+    // Generate comprehensive recommendations
+    const recommendations = generateEnhancedRecommendations(propertyScores, strategy, properties);
+    
+    // Create analysis result
+    const analysisResult: AnalysisResponse = {
+      portfolio_health: portfolioHealth,
+      risk_level: assessEnhancedRiskLevel(portfolioHealth, propertyScores),
+      performance_grade: calculatePerformanceGrade(portfolioHealth),
+      recommendations: recommendations,
+      property_scores: propertyScores
+    };
 
     // Save analysis result to DB
     const createdAnalysis = await prisma.analysis.create({

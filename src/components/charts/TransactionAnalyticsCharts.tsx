@@ -30,7 +30,7 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
   // Prepare data for charts
   const transactionTypeData = transactions.reduce((acc, transaction) => {
     const type = transaction.type || 'Unknown';
-    const existing = acc.find(item => item.name === type);
+    const existing = acc.find((item: any) => item.name === type);
     if (existing) {
       existing.value += 1;
       existing.amount += transaction.amount || 0;
@@ -46,7 +46,7 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
 
   const statusData = transactions.reduce((acc, transaction) => {
     const status = transaction.status || 'Unknown';
-    const existing = acc.find(item => item.name === status);
+    const existing = acc.find((item: any) => item.name === status);
     if (existing) {
       existing.value += 1;
       existing.amount += transaction.amount || 0;
@@ -114,7 +114,7 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
               fill="#8884d8"
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
             >
-              {transactionTypeData.map((entry, index) => (
+              {transactionTypeData.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -207,8 +207,8 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
           <BarChart data={feesAnalysisData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis tickFormatter={(value) => `${value.toFixed(1)}%`} />
-            <Tooltip formatter={(value) => [`${value.toFixed(2)}%`, 'Fee Percentage']} />
+            <YAxis tickFormatter={(value) => `${Number(value).toFixed(1)}%`} />
+            <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}%`, 'Fee Percentage']} />
             <Bar dataKey="feePercentage" fill="#FFBB28" />
           </BarChart>
         </ResponsiveContainer>

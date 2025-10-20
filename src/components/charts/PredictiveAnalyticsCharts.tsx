@@ -34,7 +34,7 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
     if (confidence >= 80) level = 'High';
     else if (confidence >= 60) level = 'Medium';
     
-    const existing = acc.find(item => item.name === level);
+    const existing = acc.find((item: any) => item.name === level);
     if (existing) {
       existing.value += 1;
       existing.totalConfidence += confidence;
@@ -58,7 +58,7 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
 
   const locationPredictionsData = predictions.reduce((acc, prediction) => {
     const location = prediction.location || 'Unknown';
-    const existing = acc.find(item => item.name === location);
+    const existing = acc.find((item: any) => item.name === location);
     if (existing) {
       existing.currentValue += prediction.currentValue || 0;
       existing.predictedValue += prediction.predictedValue || 0;
@@ -72,7 +72,7 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
       });
     }
     return acc;
-  }, []).map(item => ({
+  }, []).map((item: any) => ({
     ...item,
     averageCurrentValue: item.currentValue / item.count,
     averagePredictedValue: item.predictedValue / item.count
@@ -80,7 +80,7 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
 
   const propertyTypeData = predictions.reduce((acc, prediction) => {
     const type = prediction.propertyType || 'Unknown';
-    const existing = acc.find(item => item.name === type);
+    const existing = acc.find((item: any) => item.name === type);
     if (existing) {
       existing.value += 1;
       existing.growthRate += prediction.growthRate || 0;
@@ -92,7 +92,7 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
       });
     }
     return acc;
-  }, []).map(item => ({
+  }, []).map((item: any) => ({
     ...item,
     averageGrowthRate: item.growthRate / item.value
   }));
@@ -130,7 +130,7 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
               fill="#8884d8"
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
             >
-              {confidenceDistributionData.map((entry, index) => (
+              {confidenceDistributionData.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -179,8 +179,8 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
           <BarChart data={propertyTypeData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
-            <YAxis tickFormatter={(value) => `${value.toFixed(1)}%`} />
-            <Tooltip formatter={(value) => [`${value.toFixed(2)}%`, 'Average Growth Rate']} />
+            <YAxis tickFormatter={(value) => `${Number(value).toFixed(1)}%`} />
+            <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}%`, 'Average Growth Rate']} />
             <Bar dataKey="averageGrowthRate" fill="#FFBB28" />
           </BarChart>
         </ResponsiveContainer>

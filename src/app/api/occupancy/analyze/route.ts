@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-
-const PYTHON_SERVICE_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
+import {
+  calculateUtilizationScores,
+  checkLeaseCompliance,
+  generateOccupancyOptimizationRecommendations,
+  calculateEfficiencyMetrics,
+  type OccupancyData,
+  type LeaseData,
+  type OccupancyAnalysisResponse
+} from '@/lib/analytics-engine';
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -25,39 +32,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No occupancy data found for this user' }, { status: 404 });
     }
 
-    // Transform occupancy data for Python service
-    const occupancy = occupancyData.map(data => ({
-      property_id: data.propertyId,
-      property_name: data.propertyName,
-      property_type: data.propertyType,
-      location: data.location,
-      total_units: data.totalUnits,
-      occupied_units: data.occupiedUnits,
-      occupancy_rate: data.occupancyRate,
-      average_rent: data.averageRent,
-      total_revenue: data.totalRevenue,
-      vacant_units: data.vacantUnits,
-      lease_expirations: data.leaseExpirations,
-      risk_level: data.riskLevel
-    }));
-
-    // Call Python service for occupancy analysis
-    const response = await fetch(`${PYTHON_SERVICE_URL}/occupancy/analyze`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        occupancy_data: occupancy,
-        analysis_date: new Date().toISOString().split('T')[0]
-      }),
+    // Get lease data for compliance checking
+    const leases = await prisma.lease.findMany({
+      where: { upload: { userId: userId } },
+      include: { upload: { select: { createdAt: true } } }
     });
 
-    if (!response.ok) {
-      throw new Error(`Python service error: ${response.statusText}`);
-    }
+    // Transform occupancy data for analysis
+    const occupancy: OccupancyData[] = occupancyData.map(data => ({
+      property_id: data.propertyId,
+      total_sq_ft: data.totalUnits * 1000, // Estimate 1000 sq ft per unit
+      occupied_sq_ft: data.occupiedUnits * 1000,
+      vacant_sq_ft: data.vacantUnits * 1000,
+      common_areas: data.totalUnits * 100, // Estimate 10% common areas
+      parking_spaces: data.totalUnits * 1.5, // Estimate 1.5 spaces per unit
+      occupied_parking: data.occupiedUnits * 1.2, // Estimate 1.2 spaces per occupied unit
+      sensor_data: {
+        occupancy_rate: data.occupancyRate,
+        risk_level: data.riskLevel
+      }
+    }));
 
-    const analysisResult = await response.json();
+    // Transform lease data for analysis
+    const leaseData: LeaseData[] = leases.map(lease => ({
+      lease_id: lease.leaseId,
+      property_id: lease.propertyId,
+      tenant_name: lease.tenantName,
+      lease_start: lease.startDate.toISOString().split('T')[0],
+      lease_end: lease.endDate.toISOString().split('T')[0],
+      monthly_rent: lease.monthlyRent,
+      security_deposit: lease.securityDeposit || undefined,
+      renewal_option: lease.renewalOption,
+      break_clause: lease.breakClause
+    }));
+
+    // Calculate utilization scores
+    const utilizationScores = calculateUtilizationScores(occupancy);
+    
+    // Check compliance alerts
+    const complianceAlerts = checkLeaseCompliance(occupancy, leaseData);
+    
+    // Generate optimization recommendations
+    const optimizationRecommendations = generateOccupancyOptimizationRecommendations(utilizationScores);
+    
+    // Calculate efficiency metrics
+    const efficiencyMetrics = calculateEfficiencyMetrics(occupancy, utilizationScores);
+    
+    // Create analysis result
+    const analysisResult: OccupancyAnalysisResponse = {
+      utilization_scores: utilizationScores,
+      compliance_alerts: complianceAlerts,
+      optimization_recommendations: optimizationRecommendations,
+      efficiency_metrics: efficiencyMetrics
+    };
 
     // Save analysis results to database
     const createdAnalysis = await prisma.analysis.create({

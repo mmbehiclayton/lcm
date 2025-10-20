@@ -30,7 +30,7 @@ export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsP
   // Prepare data for charts
   const leaseStatusData = leases.reduce((acc, lease) => {
     const status = lease.status || 'Unknown';
-    const existing = acc.find(item => item.name === status);
+    const existing = acc.find((item: any) => item.name === status);
     if (existing) {
       existing.value += 1;
       existing.rent += lease.rent || 0;
@@ -46,7 +46,7 @@ export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsP
 
   const riskDistributionData = leases.reduce((acc, lease) => {
     const risk = lease.riskLevel || 'Medium';
-    const existing = acc.find(item => item.name === risk);
+    const existing = acc.find((item: any) => item.name === risk);
     if (existing) {
       existing.value += 1;
       existing.rent += lease.rent || 0;
@@ -104,7 +104,7 @@ export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsP
               fill="#8884d8"
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
             >
-              {leaseStatusData.map((entry, index) => (
+              {leaseStatusData.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>

@@ -63,7 +63,7 @@ export function PortfolioHealthChart({ data, className }: PortfolioHealthChartPr
             radius={[4, 4, 0, 0]}
             maxBarSize={60}
           >
-            {data.map((entry, index) => (
+            {data.map((entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={getBarColor(entry.healthScore)} />
             ))}
           </Bar>

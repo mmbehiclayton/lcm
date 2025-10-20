@@ -53,7 +53,7 @@ export function AnalyticsChart({
               fill="#8884d8"
               dataKey={dataKey}
             >
-              {data.map((entry, index) => (
+              {data.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
             </Pie>
@@ -93,7 +93,7 @@ export function AnalyticsChart({
       <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
       <div style={{ height }}>
         <ResponsiveContainer width="100%" height="100%">
-          {renderChart()}
+          {renderChart() || <div>No chart data available</div>}
         </ResponsiveContainer>
       </div>
     </div>

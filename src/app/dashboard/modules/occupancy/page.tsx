@@ -164,7 +164,7 @@ export default function OccupancyPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -188,7 +188,7 @@ export default function OccupancyPage() {
       console.error('Upload error:', error);
       toast.error('Upload failed. Please try again.');
     } finally {
-      setUploading(false);
+      setIsLoading(false);
     }
   };
 

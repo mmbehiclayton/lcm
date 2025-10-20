@@ -67,7 +67,7 @@ export default function TransactionsPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              transactions: data.map(txn => ({
+              transactions: data.map((txn: any) => ({
                 transaction_id: txn.id,
                 property_id: txn.propertyId,
                 tenant_id: 'tenant-' + txn.propertyId,
@@ -206,7 +206,7 @@ export default function TransactionsPage() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -230,7 +230,7 @@ export default function TransactionsPage() {
       console.error('Upload error:', error);
       toast.error('Upload failed. Please try again.');
     } finally {
-      setUploading(false);
+      setIsLoading(false);
     }
   };
 

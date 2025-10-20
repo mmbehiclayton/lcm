@@ -38,7 +38,7 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
 
   const riskLevelData = occupancyData.reduce((acc, property) => {
     const risk = property.riskLevel || 'Medium';
-    const existing = acc.find(item => item.name === risk);
+    const existing = acc.find((item: any) => item.name === risk);
     if (existing) {
       existing.value += 1;
       existing.totalRevenue += property.totalRevenue || 0;
@@ -69,7 +69,7 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
 
   const locationOccupancyData = occupancyData.reduce((acc, property) => {
     const location = property.location || 'Unknown';
-    const existing = acc.find(item => item.name === location);
+    const existing = acc.find((item: any) => item.name === location);
     if (existing) {
       existing.occupancyRate += (property.occupancyRate || 0) * 100;
       existing.count += 1;
@@ -83,7 +83,7 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
       });
     }
     return acc;
-  }, []).map(item => ({
+  }, []).map((item: any) => ({
     ...item,
     occupancyRate: item.occupancyRate / item.count
   }));
@@ -105,7 +105,7 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis tickFormatter={(value) => `${value}%`} />
-            <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Occupancy Rate']} />
+            <Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, 'Occupancy Rate']} />
             <Bar dataKey="occupancyRate" fill="#00C49F" />
           </BarChart>
         </ResponsiveContainer>
@@ -126,7 +126,7 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
               fill="#8884d8"
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
             >
-              {riskLevelData.map((entry, index) => (
+              {riskLevelData.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -174,7 +174,7 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis tickFormatter={(value) => `${value}%`} />
-            <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Average Occupancy']} />
+            <Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, 'Average Occupancy']} />
             <Area 
               type="monotone" 
               dataKey="occupancyRate" 

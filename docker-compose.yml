@@ -26,14 +26,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  python-service:
-    build: ./python-service
-    ports:
-      - "8000:8000"
-    environment:
-      - PYTHON_SERVICE_URL=http://localhost:8000
-    volumes:
-      - ./python-service:/app
+  # Python service removed - using native analytics engine
 
 volumes:
   mysql_data:

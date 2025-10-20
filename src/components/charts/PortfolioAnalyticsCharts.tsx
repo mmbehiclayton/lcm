@@ -30,7 +30,7 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
   // Prepare data for charts
   const propertyTypeData = properties.reduce((acc, property) => {
     const type = property.type || 'Unknown';
-    const existing = acc.find(item => item.name === type);
+    const existing = acc.find((item: any) => item.name === type);
     if (existing) {
       existing.value += 1;
       existing.totalValue += property.currentValue || 0;
@@ -55,7 +55,7 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
 
   const locationData = properties.reduce((acc, property) => {
     const location = property.location || 'Unknown';
-    const existing = acc.find(item => item.name === location);
+    const existing = acc.find((item: any) => item.name === location);
     if (existing) {
       existing.value += property.currentValue || 0;
       existing.count += 1;
@@ -93,7 +93,7 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
               fill="#8884d8"
               label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
             >
-              {propertyTypeData.map((entry, index) => (
+              {propertyTypeData.map((entry: any, index: number) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -141,7 +141,7 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis tickFormatter={(value) => `${value}%`} />
-            <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Appreciation']} />
+            <Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, 'Appreciation']} />
             <Area 
               type="monotone" 
               dataKey="appreciation" 

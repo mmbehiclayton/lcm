@@ -48,7 +48,7 @@ export function RiskDistributionChart({ data, className }: RiskDistributionChart
             paddingAngle={5}
             dataKey="value"
           >
-            {data.map((entry, index) => (
+            {data.map((entry: any, index: number) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
