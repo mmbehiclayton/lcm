@@ -1,0 +1,269 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  uploads       Upload[]
+  analyses      Analysis[]
+  accounts      Account[]
+  sessions      Session[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Upload {
+  id        String   @id @default(cuid())
+  userId    String
+  filename  String
+  fileType  String
+  fileSize  Int
+  filePath  String
+  module    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  
+  user      User      @relation(fields: [userId], references: [id])
+  analyses  Analysis[]
+  properties Property[]
+  leases    Lease[]
+  transactions Transaction[]
+  occupancy OccupancyData[]
+  predictive PredictiveData[]
+  
+  @@map("uploads")
+}
+
+model Analysis {
+  id        String   @id @default(cuid())
+  userId    String
+  uploadId  String
+  strategy  String
+  results   Json?
+  createdAt DateTime @default(now())
+  
+  user      User   @relation(fields: [userId], references: [id])
+  upload    Upload @relation(fields: [uploadId], references: [id])
+  
+  @@map("analyses")
+}
+
+model Property {
+  id               String   @id @default(cuid())
+  uploadId         String
+  propertyId       String
+  name             String
+  type             String
+  location         String
+  purchasePrice    Float?
+  currentValue     Float?
+  noi              Float?
+  occupancyRate    Float?
+  purchaseDate     DateTime?
+  leaseExpiryDate  DateTime?
+  epcRating        String?
+  maintenanceScore Float?
+  createdAt        DateTime @default(now())
+  
+  upload Upload @relation(fields: [uploadId], references: [id])
+  
+  @@map("properties")
+}
+
+model Lease {
+  id              String   @id @default(cuid())
+  uploadId        String
+  propertyId      String
+  leaseId         String
+  tenantName      String
+  startDate       DateTime
+  endDate         DateTime
+  monthlyRent     Float
+  securityDeposit Float?
+  renewalOption   Boolean @default(false)
+  breakClause     Boolean @default(false)
+  createdAt       DateTime @default(now())
+  
+  upload Upload @relation(fields: [uploadId], references: [id])
+  
+  @@map("leases")
+}
+
+model Occupancy {
+  id               String   @id @default(cuid())
+  propertyId       String
+  totalSqFt        Float
+  occupiedSqFt     Float
+  vacantSqFt       Float
+  commonAreas      Float?
+  parkingSpaces    Int?
+  occupiedParking  Int?
+  createdAt        DateTime @default(now())
+  
+  @@map("occupancy")
+}
+
+model PortfolioScore {
+  id               String   @id @default(cuid())
+  analysisId       String
+  healthScore      Float
+  riskLevel        String
+  performanceGrade String
+  weightedMetrics  Json
+  recommendations  Json?
+  createdAt        DateTime @default(now())
+  
+  @@map("portfolio_scores")
+}
+
+model LeaseScore {
+  id                String   @id @default(cuid())
+  analysisId        String
+  leaseId           String
+  expiryAlert       Boolean
+  renewalProbability Float?
+  rentOptimization  Float?
+  leaseScore        Float
+  actionRequired    String?
+  createdAt         DateTime @default(now())
+  
+  @@map("lease_scores")
+}
+
+model OccupancyScore {
+  id                        String   @id @default(cuid())
+  analysisId                String
+  propertyId                String
+  occupancyRate             Float
+  efficiencyScore           Float
+  vacancyCost               Float?
+  marketRateComparison      Float?
+  optimizationRecommendations Json?
+  createdAt                 DateTime @default(now())
+  
+  @@map("occupancy_scores")
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  uploadId        String
+  transactionId   String
+  propertyId      String
+  transactionType String
+  amount          Float
+  transactionDate DateTime
+  counterparty    String
+  status          String
+  legalFees       Float?
+  brokerageFees  Float?
+  otherFees       Float?
+  netAmount       Float?
+  notes           String?
+  createdAt       DateTime @default(now())
+  
+  upload Upload @relation(fields: [uploadId], references: [id])
+  
+  @@map("transactions")
+}
+
+model OccupancyData {
+  id                String   @id @default(cuid())
+  uploadId          String
+  propertyId         String
+  propertyName       String
+  propertyType       String
+  location           String
+  totalUnits         Int
+  occupiedUnits      Int
+  occupancyRate      Float
+  averageRent        Float
+  totalRevenue       Float
+  vacantUnits        Int
+  leaseExpirations   Int
+  riskLevel          String
+  createdAt          DateTime @default(now())
+  
+  upload Upload @relation(fields: [uploadId], references: [id])
+  
+  @@map("occupancy_data")
+}
+
+model PredictiveData {
+  id                String   @id @default(cuid())
+  uploadId          String
+  propertyId        String
+  propertyName      String
+  propertyType      String
+  location          String
+  currentValue      Float
+  historicalValues  Json?
+  marketTrends      Json?
+  economicIndicators Json?
+  rentalGrowthRates Json?
+  marketComparables Json?
+  locationScore     Float?
+  propertyAge       Int?
+  condition         String?
+  predictedValue    Float?
+  confidence        Float?
+  createdAt         DateTime @default(now())
+  
+  upload Upload @relation(fields: [uploadId], references: [id])
+  
+  @@map("predictive_data")
+}
