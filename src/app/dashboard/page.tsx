@@ -230,7 +230,7 @@ export default function DashboardPage() {
           href: '/dashboard/portfolio',
           stats: {
             primary: { label: 'Properties', value: 0 },
-            secondary: { label: 'Avg Value', value: '$0' },
+            secondary: { label: 'Avg Value', value: '£0' },
             tertiary: { label: 'High Performing', value: 0 }
           },
           status: 'empty'
@@ -242,7 +242,7 @@ export default function DashboardPage() {
           href: '/dashboard/modules/transactions',
           stats: {
             primary: { label: 'Total Transactions', value: 0 },
-            secondary: { label: 'Total Volume', value: '$0' },
+            secondary: { label: 'Total Volume', value: '£0' },
             tertiary: { label: 'Completed', value: 0 }
           },
           status: 'empty'
@@ -267,7 +267,7 @@ export default function DashboardPage() {
           stats: {
             primary: { label: 'Active Leases', value: 0 },
             secondary: { label: 'Expiring Soon', value: 0 },
-            tertiary: { label: 'Avg Rent', value: '$0' }
+            tertiary: { label: 'Avg Rent', value: '£0' }
           },
           status: 'empty'
         },
