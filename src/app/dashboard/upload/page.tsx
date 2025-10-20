@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
-import { Download, Upload, FileText, TrendingUp, DollarSign, Building2, BarChart3 } from 'lucide-react';
+import { Download, Upload, FileText, TrendingUp, DollarSign, Building2, BarChart3, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function UploadPage() {
   const [selectedModule, setSelectedModule] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const modules = [
     {
@@ -58,14 +60,22 @@ export default function UploadPage() {
     }
   ];
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !selectedModule) return;
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile || !selectedModule) return;
 
     setUploading(true);
+    setUploadProgress(0);
+    
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', selectedFile);
       formData.append('module', selectedModule);
 
       const response = await fetch('/api/upload', {
@@ -77,8 +87,12 @@ export default function UploadPage() {
         const result = await response.json();
         toast.success(`${modules.find(m => m.id === selectedModule)?.name} data uploaded successfully!`);
         // Reset form
-        event.target.value = '';
+        setSelectedFile(null);
         setSelectedModule('');
+        setUploadProgress(0);
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Upload failed');
@@ -88,7 +102,14 @@ export default function UploadPage() {
       toast.error('Upload failed. Please try again.');
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
+  };
+
+  const handleFileRemove = () => {
+    setSelectedFile(null);
+    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
   };
 
   const getColorClasses = (color: string) => {
@@ -182,33 +203,96 @@ export default function UploadPage() {
               {/* File Upload */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Upload File</h3>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <div className="mt-4">
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <span className="mt-2 block text-sm font-medium text-gray-900">
-                        Click to upload or drag and drop
-                      </span>
-                      <span className="mt-1 block text-sm text-gray-500">
-                        CSV or Excel files only
-                      </span>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        accept=".csv,.xlsx,.xls"
-                        className="sr-only"
-                        onChange={handleFileUpload}
-                        disabled={uploading}
-                      />
-                    </label>
-                  </div>
-                  {uploading && (
+                
+                {!selectedFile ? (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
                     <div className="mt-4">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                      <p className="mt-2 text-sm text-gray-600">Processing data...</p>
+                      <label htmlFor="file-upload" className="cursor-pointer">
+                        <span className="mt-2 block text-sm font-medium text-gray-900">
+                          Click to upload or drag and drop
+                        </span>
+                        <span className="mt-1 block text-sm text-gray-500">
+                          CSV or Excel files only
+                        </span>
+                        <input
+                          id="file-upload"
+                          type="file"
+                          accept=".csv,.xlsx,.xls"
+                          className="sr-only"
+                          onChange={handleFileSelect}
+                          disabled={uploading}
+                        />
+                      </label>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Selected File Display */}
+                    <div className="flex items-center justify-between p-4 border border-green-200 bg-green-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-green-800">{selectedFile.name}</p>
+                          <p className="text-xs text-green-600">
+                            {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleFileRemove}
+                        className="text-red-600 hover:text-red-800 transition-colors"
+                        disabled={uploading}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    {/* Upload Button */}
+                    <div className="flex space-x-3">
+                      <Button
+                        onClick={handleFileUpload}
+                        disabled={uploading || !selectedFile}
+                        className="flex-1"
+                      >
+                        {uploading ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4 mr-2" />
+                            Upload File
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleFileRemove}
+                        disabled={uploading}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+
+                    {/* Upload Progress */}
+                    {uploading && (
+                      <div className="mt-4">
+                        <div className="flex justify-between text-sm text-gray-600 mb-2">
+                          <span>Processing data...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

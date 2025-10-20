@@ -4,9 +4,22 @@ import { join } from 'path';
 import { prisma } from '@/lib/prisma';
 import { validateFileUpload } from '@/lib/validations';
 import { DataProcessor } from '@/lib/dataProcessor';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Upload API called');
+    
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    console.log('Session:', session ? 'authenticated' : 'not authenticated');
+    
+    if (!session?.user?.id) {
+      console.log('No user ID in session');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const module = formData.get('module') as string;
@@ -48,10 +61,35 @@ export async function POST(request: NextRequest) {
     let summary;
 
     try {
+      console.log('Parsing file:', file.name, 'Type:', file.type);
       parsedData = await DataProcessor.parseFile(file, filePath);
+      console.log('Parsed data length:', parsedData.length);
+      console.log('First parsed record:', parsedData[0]);
+      
+      if (parsedData.length === 0) {
+        return NextResponse.json(
+          { 
+            error: 'No data found in file. Please ensure your file contains data and is in the correct format.',
+            details: {
+              filename: file.name,
+              fileType: file.type,
+              fileSize: file.size
+            }
+          },
+          { status: 400 }
+        );
+      }
     } catch (error) {
+      console.error('Data parsing error:', error);
       return NextResponse.json(
-        { error: `Data parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}` },
+        { 
+          error: `Data parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          details: {
+            filename: file.name,
+            fileType: file.type,
+            fileSize: file.size
+          }
+        },
         { status: 400 }
       );
     }
@@ -71,9 +109,14 @@ export async function POST(request: NextRequest) {
         break;
       
       case 'transactions':
+        console.log('Processing transaction data...');
+        console.log('Raw parsed data before cleaning:', parsedData.slice(0, 2));
         cleanedData = DataProcessor.cleanTransactionData(parsedData);
+        console.log('Cleaned data after processing:', cleanedData.slice(0, 2));
         validationResult = DataProcessor.validateTransactionDataCompleteness(cleanedData);
+        console.log('Validation result:', validationResult);
         summary = DataProcessor.generateTransactionDataSummary(cleanedData);
+        console.log('Summary:', summary);
         break;
       
       case 'occupancy':
@@ -108,7 +151,7 @@ export async function POST(request: NextRequest) {
     // Save to database
     const upload = await prisma.upload.create({
       data: {
-        userId: 'default-user', // TODO: Get from authentication
+        userId: session.user.id,
         filename: file.name,
         fileType: file.type,
         fileSize: file.size,
@@ -127,6 +170,8 @@ export async function POST(request: NextRequest) {
     // Module-specific database operations
     let savedRecords = [];
     
+    console.log(`Processing ${module} data:`, { recordCount: cleanedData.length, userId: session.user.id });
+    
     switch (module) {
       case 'portfolio':
         // Save properties to database
@@ -136,17 +181,17 @@ export async function POST(request: NextRequest) {
               data: {
                 uploadId: upload.id,
                 propertyId: property.property_id,
-                name: property.name,
-                type: property.type,
-                location: property.location,
-                purchasePrice: property.purchase_price,
-                currentValue: property.current_value,
-                noi: property.noi,
-                occupancyRate: property.occupancy_rate,
+                name: property.property_name || property.name || 'Unknown Property',
+                type: property.property_type || property.type || 'Unknown',
+                location: property.location || 'Unknown Location',
+                purchasePrice: property.purchase_price || 0,
+                currentValue: property.current_value || 0,
+                noi: property.noi || 0,
+                occupancyRate: property.occupancy_rate || 0,
                 purchaseDate: property.purchase_date ? new Date(property.purchase_date) : null,
                 leaseExpiryDate: property.lease_expiry_date ? new Date(property.lease_expiry_date) : null,
-                epcRating: property.epc_rating,
-                maintenanceScore: property.maintenance_score
+                epcRating: property.epc_rating || null,
+                maintenanceScore: property.maintenance_score || null
               }
             })
           )
@@ -162,13 +207,17 @@ export async function POST(request: NextRequest) {
                 uploadId: upload.id,
                 propertyId: lease.property_id,
                 leaseId: lease.lease_id,
+                tenantId: lease.tenant_id || null,
                 tenantName: lease.tenant_name,
                 startDate: new Date(lease.lease_start),
                 endDate: new Date(lease.lease_end),
                 monthlyRent: lease.monthly_rent,
+                escalationRate: lease.escalation_rate || null,
                 securityDeposit: lease.security_deposit,
                 renewalOption: lease.renewal_option,
-                breakClause: lease.break_clause
+                breakClause: lease.break_clause,
+                tenantCreditRating: lease.tenant_credit_rating || null,
+                leaseStatus: lease.lease_status || 'Active'
               }
             })
           )
@@ -177,27 +226,117 @@ export async function POST(request: NextRequest) {
       
       case 'transactions':
         // Save transaction data to database
-        savedRecords = await Promise.all(
-          cleanedData.map(transaction =>
-            prisma.transaction.create({
-              data: {
-                uploadId: upload.id,
-                propertyId: transaction.property_id,
-                transactionId: transaction.transaction_id,
-                transactionType: transaction.transaction_type,
-                amount: transaction.amount,
-                transactionDate: new Date(transaction.transaction_date),
-                counterparty: transaction.counterparty,
-                status: transaction.status,
-                legalFees: transaction.legal_fees,
-                brokerageFees: transaction.brokerage_fees,
-                otherFees: transaction.other_fees,
-                netAmount: transaction.net_amount,
-                notes: transaction.notes
+        console.log('Raw cleaned data length:', cleanedData.length);
+        console.log('First cleaned record:', cleanedData[0]);
+        console.log('Upload ID:', upload.id);
+        
+        if (cleanedData.length === 0) {
+          console.log('No cleaned data to save');
+          return NextResponse.json(
+            { 
+              error: 'No valid transaction data found after processing. Please check your data format and required fields.',
+              details: {
+                validationResult,
+                summary
               }
-            })
-          )
-        );
+            },
+            { status: 400 }
+          );
+        } else {
+          try {
+            console.log('Attempting to save transaction data...');
+            
+            // Use a database transaction to ensure all records are saved
+            savedRecords = await prisma.$transaction(async (tx) => {
+              const records = [];
+              const propertyIds = [...new Set(cleanedData.map(t => t.property_id))];
+              
+              // First, ensure all properties exist
+              console.log('Ensuring properties exist for IDs:', propertyIds);
+              for (const propertyId of propertyIds) {
+                const existingProperty = await tx.property.findFirst({
+                  where: { propertyId: propertyId }
+                });
+                
+                if (!existingProperty) {
+                  console.log(`Creating property record for ${propertyId}`);
+                  
+                  // Generate a more meaningful property name
+                  const propertyName = propertyId.includes('PROP-') 
+                    ? `Property ${propertyId.replace('PROP-', '')}`
+                    : `Property ${propertyId}`;
+                  
+                  await tx.property.create({
+                    data: {
+                      uploadId: upload.id,
+                      propertyId: propertyId,
+                      name: propertyName,
+                      location: 'Location TBD',
+                      type: 'Commercial',
+                      purchasePrice: 0,
+                      currentValue: 0,
+                      noi: 0,
+                      occupancyRate: 0,
+                      maintenanceScore: 0,
+                      purchaseDate: new Date()
+                    }
+                  });
+                }
+              }
+              
+              // Then create transaction records
+              for (let i = 0; i < cleanedData.length; i++) {
+                const transaction = cleanedData[i];
+                console.log(`Processing transaction ${i + 1}:`, {
+                  transaction_id: transaction.transaction_id,
+                  property_id: transaction.property_id,
+                  amount: transaction.amount,
+                  transaction_type: transaction.transaction_type
+                });
+                
+                const record = await tx.transaction.create({
+                  data: {
+                    uploadId: upload.id,
+                    propertyId: transaction.property_id,
+                    tenantId: transaction.tenant_id || null,
+                    leaseId: transaction.lease_id || null,
+                    transactionId: transaction.transaction_id,
+                    transactionType: transaction.transaction_type,
+                    amount: transaction.amount,
+                    expectedAmount: transaction.expected_amount || transaction.amount,
+                    transactionDate: new Date(transaction.transaction_date),
+                    dueDate: transaction.due_date ? new Date(transaction.due_date) : new Date(transaction.transaction_date),
+                    counterparty: transaction.counterparty,
+                    status: transaction.status,
+                    paymentMethod: transaction.payment_method || null,
+                    reference: transaction.reference || null,
+                    legalFees: transaction.legal_fees,
+                    brokerageFees: transaction.brokerage_fees,
+                    otherFees: transaction.other_fees,
+                    netAmount: transaction.net_amount,
+                    notes: transaction.notes
+                  }
+                });
+                records.push(record);
+                console.log(`Saved transaction ${i + 1} with ID: ${record.id}`);
+              }
+              return records;
+            });
+            
+            console.log(`Successfully saved ${savedRecords.length} transaction records`);
+            
+            // Verify the records were actually saved
+            const verifyRecords = await prisma.transaction.findMany({
+              where: { uploadId: upload.id }
+            });
+            console.log(`Verification: Found ${verifyRecords.length} records in database for upload ${upload.id}`);
+          } catch (error) {
+            console.error('Error saving transaction data:', error);
+            console.error('Error details:', error.message);
+            console.error('Error stack:', error.stack);
+            throw error;
+          }
+        }
         break;
       
       case 'occupancy':
@@ -218,7 +357,27 @@ export async function POST(request: NextRequest) {
                 totalRevenue: occupancy.total_revenue,
                 vacantUnits: occupancy.vacant_units,
                 leaseExpirations: occupancy.lease_expirations,
-                riskLevel: occupancy.risk_level
+                riskLevel: occupancy.risk_level,
+                // Sensor data fields
+                deskUsage: occupancy.desk_usage || null,
+                badgeIns: occupancy.badge_ins || null,
+                meetingRoomUsage: occupancy.meeting_room_usage || null,
+                lightingUsage: occupancy.lighting_usage || null,
+                temperatureAvg: occupancy.temperature_avg || null,
+                // Historical data fields
+                avgOccupancy3Months: occupancy.avg_occupancy_3_months || null,
+                avgOccupancy6Months: occupancy.avg_occupancy_6_months || null,
+                avgOccupancy12Months: occupancy.avg_occupancy_12_months || null,
+                peakUsage: occupancy.peak_usage || null,
+                // Lease compliance fields
+                permittedUsage: occupancy.permitted_usage || null,
+                sublettingAllowed: occupancy.subletting_allowed !== undefined ? occupancy.subletting_allowed : null,
+                coworkingRestrictions: occupancy.coworking_restrictions !== undefined ? occupancy.coworking_restrictions : null,
+                maxOccupancy: occupancy.max_occupancy || null,
+                // Tenant info fields
+                businessType: occupancy.business_type || null,
+                headcountEstimate: occupancy.headcount_estimate || null,
+                actualHeadcount: occupancy.actual_headcount || null
               }
             })
           )
@@ -252,6 +411,13 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    console.log('Upload completed successfully:', {
+      uploadId: upload.id,
+      filename: file.name,
+      module: module,
+      recordsCount: savedRecords.length
+    });
+
     return NextResponse.json({ 
       success: true, 
       uploadId: upload.id,
@@ -273,7 +439,17 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const uploads = await prisma.upload.findMany({
+      where: {
+        userId: session.user.id
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         properties: true,

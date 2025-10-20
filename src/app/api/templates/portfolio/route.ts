@@ -6,8 +6,8 @@ export async function GET() {
     const templateData = [
       {
         property_id: 'PROP-001',
-        name: 'Downtown Office Tower',
-        type: 'Office',
+        property_name: 'Downtown Office Tower',
+        property_type: 'Office',
         location: 'New York, NY',
         purchase_price: 25000000,
         current_value: 27500000,

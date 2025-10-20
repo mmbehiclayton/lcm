@@ -130,13 +130,17 @@ model Lease {
   uploadId        String
   propertyId      String
   leaseId         String
+  tenantId        String?  // Added: Tenant identifier
   tenantName      String
   startDate       DateTime
   endDate         DateTime
   monthlyRent     Float
+  escalationRate  Float?   // Added: Annual escalation rate
   securityDeposit Float?
   renewalOption   Boolean @default(false)
   breakClause     Boolean @default(false)
+  tenantCreditRating String? // Added: Credit rating
+  leaseStatus     String?  // Added: Lease status (Active, Expired, etc.)
   createdAt       DateTime @default(now())
   
   upload Upload @relation(fields: [uploadId], references: [id])
@@ -204,11 +208,17 @@ model Transaction {
   uploadId        String
   transactionId   String
   propertyId      String
+  tenantId        String?  // Added: Link to tenant
+  leaseId         String?  // Added: Link to lease
   transactionType String
   amount          Float
+  expectedAmount  Float?   // Added: Expected amount for reconciliation
   transactionDate DateTime
+  dueDate         DateTime? // Added: Due date for reconciliation
   counterparty    String
   status          String
+  paymentMethod   String?  // Added: Payment method
+  reference       String?  // Added: Transaction reference
   legalFees       Float?
   brokerageFees  Float?
   otherFees       Float?
@@ -222,21 +232,41 @@ model Transaction {
 }
 
 model OccupancyData {
-  id                String   @id @default(cuid())
-  uploadId          String
-  propertyId         String
-  propertyName       String
-  propertyType       String
-  location           String
-  totalUnits         Int
-  occupiedUnits      Int
-  occupancyRate      Float
-  averageRent        Float
-  totalRevenue       Float
-  vacantUnits        Int
-  leaseExpirations   Int
-  riskLevel          String
-  createdAt          DateTime @default(now())
+  id                    String   @id @default(cuid())
+  uploadId              String
+  propertyId            String
+  propertyName          String
+  propertyType          String
+  location              String
+  totalUnits            Int
+  occupiedUnits         Int
+  occupancyRate         Float
+  averageRent           Float
+  totalRevenue          Float
+  vacantUnits           Int
+  leaseExpirations      Int
+  riskLevel             String
+  // Sensor data fields
+  deskUsage             Float?
+  badgeIns              Float?
+  meetingRoomUsage      Float?
+  lightingUsage         Float?
+  temperatureAvg        Float?
+  // Historical data fields
+  avgOccupancy3Months   Float?
+  avgOccupancy6Months   Float?
+  avgOccupancy12Months  Float?
+  peakUsage             Float?
+  // Lease compliance fields
+  permittedUsage        String?
+  sublettingAllowed     Boolean?
+  coworkingRestrictions Boolean?
+  maxOccupancy          Int?
+  // Tenant info fields
+  businessType          String?
+  headcountEstimate     Int?
+  actualHeadcount       Int?
+  createdAt             DateTime @default(now())
   
   upload Upload @relation(fields: [uploadId], references: [id])
   

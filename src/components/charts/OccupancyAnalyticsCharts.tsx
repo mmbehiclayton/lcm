@@ -30,11 +30,18 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
   // Prepare data for charts
   const occupancyRateData = occupancyData.map(property => ({
     name: property.propertyName?.substring(0, 15) + '...' || 'Property',
-    occupancyRate: (property.occupancyRate || 0) * 100,
+    occupancyRate: property.occupancyRate || 0,
     totalUnits: property.totalUnits || 0,
     occupiedUnits: property.occupiedUnits || 0,
     vacantUnits: property.vacantUnits || 0
   }));
+
+  // Utilization Classification Data (from analysis if available)
+  const utilizationData = analysis?.summary ? [
+    { name: 'Efficient', value: analysis.summary.efficient_count || 0, color: '#10B981' },
+    { name: 'Underutilised', value: analysis.summary.underutilised_count || 0, color: '#F59E0B' },
+    { name: 'Overcrowded', value: analysis.summary.overcrowded_count || 0, color: '#EF4444' }
+  ].filter(item => item.value > 0) : [];
 
   const riskLevelData = occupancyData.reduce((acc, property) => {
     const risk = property.riskLevel || 'Medium';
@@ -96,11 +103,37 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
   }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+      {/* Utilization Classification (NEW) */}
+      {utilizationData.length > 0 && (
+        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Utilization Classification</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={utilizationData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={60}
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {utilizationData.map((entry: any, index: number) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip formatter={(value, name) => [`${value} properties`, name]} />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* Occupancy Rate by Property */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Occupancy Rate by Property</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Occupancy Rate by Property</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={occupancyRateData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -112,9 +145,9 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
       </div>
 
       {/* Risk Level Distribution */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Level Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Risk Level Distribution</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
               data={riskLevelData}
@@ -137,9 +170,9 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
       </div>
 
       {/* Revenue Analysis by Property */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenue Analysis by Property</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Revenue Analysis by Property</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={revenueByPropertyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -151,9 +184,9 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
       </div>
 
       {/* Unit Distribution */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Unit Distribution (Occupied vs Vacant)</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Unit Distribution (Occupied vs Vacant)</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={unitDistributionData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -167,9 +200,9 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
       </div>
 
       {/* Occupancy by Location */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Average Occupancy by Location</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Average Occupancy by Location</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={locationOccupancyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -187,9 +220,9 @@ export function OccupancyAnalyticsCharts({ occupancyData, analysis }: OccupancyA
       </div>
 
       {/* Lease Expiration Analysis */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lease Expiration Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Lease Expiration Analysis</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <LineChart data={leaseExpirationData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />

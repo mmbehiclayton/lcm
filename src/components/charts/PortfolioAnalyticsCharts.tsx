@@ -33,12 +33,12 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
     const existing = acc.find((item: any) => item.name === type);
     if (existing) {
       existing.value += 1;
-      existing.totalValue += property.currentValue || 0;
+      existing.totalValue += (property.currentValue ?? property.value ?? 0);
     } else {
       acc.push({
         name: type,
         value: 1,
-        totalValue: property.currentValue || 0,
+        totalValue: (property.currentValue ?? property.value ?? 0),
         count: 1
       });
     }
@@ -48,21 +48,21 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
   const performanceData = properties.map(property => ({
     name: property.name?.substring(0, 15) + '...' || 'Property',
     performance: property.performance || 'B',
-    value: property.currentValue || 0,
+    value: (property.currentValue ?? property.value ?? 0),
     noi: property.noi || 0,
-    occupancy: (property.occupancyRate || 0) * 100
+    occupancy: ((property.occupancyRate ?? property.occupancy ?? 0) * 100)
   }));
 
   const locationData = properties.reduce((acc, property) => {
     const location = property.location || 'Unknown';
     const existing = acc.find((item: any) => item.name === location);
     if (existing) {
-      existing.value += property.currentValue || 0;
+      existing.value += (property.currentValue ?? property.value ?? 0);
       existing.count += 1;
     } else {
       acc.push({
         name: location,
-        value: property.currentValue || 0,
+        value: (property.currentValue ?? property.value ?? 0),
         count: 1
       });
     }
@@ -71,9 +71,9 @@ export function PortfolioAnalyticsCharts({ properties, analysis }: PortfolioAnal
 
   const valueTrendData = properties.map((property, index) => ({
     name: `Property ${index + 1}`,
-    currentValue: property.currentValue || 0,
-    purchasePrice: property.purchasePrice || 0,
-    appreciation: ((property.currentValue || 0) - (property.purchasePrice || 0)) / (property.purchasePrice || 1) * 100
+    currentValue: (property.currentValue ?? property.value ?? 0),
+    purchasePrice: (property.purchasePrice ?? property.purchase_price ?? 0),
+    appreciation: (((property.currentValue ?? property.value ?? 0) - (property.purchasePrice ?? property.purchase_price ?? 0)) / ((property.purchasePrice ?? property.purchase_price ?? 1)) * 100)
   }));
 
   return (

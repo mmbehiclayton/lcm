@@ -114,11 +114,11 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
   }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Confidence Level Distribution */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Prediction Confidence Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Prediction Confidence Distribution</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
               data={confidenceDistributionData}
@@ -141,9 +141,9 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
       </div>
 
       {/* Value Growth Analysis */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Value Growth Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Value Growth Analysis</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={valueGrowthData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -156,10 +156,10 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
         </ResponsiveContainer>
       </div>
 
-      {/* Location-based Predictions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Average Values by Location</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      {/* Asset Classification */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Asset Classification</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={locationPredictionsData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -172,75 +172,43 @@ export function PredictiveAnalyticsCharts({ predictions, analysis }: PredictiveA
         </ResponsiveContainer>
       </div>
 
-      {/* Property Type Growth Rates */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Average Growth Rate by Property Type</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={propertyTypeData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis tickFormatter={(value) => `${Number(value).toFixed(1)}%`} />
-            <Tooltip formatter={(value) => [`${Number(value).toFixed(2)}%`, 'Average Growth Rate']} />
-            <Bar dataKey="averageGrowthRate" fill="#FFBB28" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Prediction Timeline */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Prediction Value Timeline</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={timeSeriesData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
-            <Tooltip formatter={(value) => [`$${value.toLocaleString()}`, 'Value']} />
-            <Legend />
-            <Area 
-              type="monotone" 
-              dataKey="currentValue" 
-              stroke="#0088FE" 
-              fill="#0088FE" 
-              fillOpacity={0.6}
-              name="Current Value"
-            />
-            <Area 
-              type="monotone" 
-              dataKey="predictedValue" 
-              stroke="#00C49F" 
-              fill="#00C49F" 
-              fillOpacity={0.6}
-              name="Predicted Value"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Confidence vs Growth Rate */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Confidence vs Growth Rate Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={confidenceVsGrowthData}>
+      {/* EPC Risk Distribution */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">EPC Risk Distribution</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={predictions.reduce((acc, pred) => {
+            const risk = pred.predicted_epc_risk || 'N/A';
+            const existing = acc.find((item: any) => item.name === risk);
+            if (existing) {
+              existing.value += 1;
+            } else {
+              acc.push({ name: risk, value: 1 });
+            }
+            return acc;
+          }, [])}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
             <YAxis />
             <Tooltip />
-            <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="confidence" 
-              stroke="#FF8042" 
-              strokeWidth={2}
-              name="Confidence %"
-            />
-            <Line 
-              type="monotone" 
-              dataKey="growthRate" 
-              stroke="#00C49F" 
-              strokeWidth={2}
-              name="Growth Rate %"
-            />
-          </LineChart>
+            <Bar dataKey="value" fill="#FF8042" name="Properties" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Occupancy Forecast */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Forecasted Occupancy Rate</h3>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={predictions.map(pred => ({
+            name: pred.property_name?.substring(0, 10) || pred.property_id,
+            occupancy: pred.forecasted_occupancy_rate || 0
+          })).slice(0, 10)}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis tickFormatter={(value) => `${value}%`} />
+            <Tooltip formatter={(value) => [`${value}%`, 'Occupancy']} />
+            <Bar dataKey="occupancy" fill="#00C49F" />
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>

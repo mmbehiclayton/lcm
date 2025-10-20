@@ -32,43 +32,40 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Transform properties to occupancy data format
-    const occupancyData = properties.map(prop => {
-      const occupancyRate = (prop.occupancyRate || 0) * 100;
-      const totalUnits = Math.floor(Math.random() * 200) + 50; // Mock total units
-      const occupiedUnits = Math.floor(totalUnits * (prop.occupancyRate || 0));
-      const vacantUnits = totalUnits - occupiedUnits;
-      
-      // Calculate average rent based on NOI and occupancy
-      const avgRent = prop.noi && prop.occupancyRate 
-        ? (prop.noi / occupiedUnits) / 12 
-        : Math.floor(Math.random() * 5000) + 1000;
-      
-      const totalRevenue = avgRent * occupiedUnits * 12;
-      
-      // Mock lease expirations (random between 0-20)
-      const leaseExpirations = Math.floor(Math.random() * 20);
-      
-      // Determine risk level based on occupancy
-      let riskLevel = 'Low';
-      if (occupancyRate < 80) riskLevel = 'High';
-      else if (occupancyRate < 90) riskLevel = 'Medium';
-
-      return {
-        propertyId: prop.id,
-        propertyName: prop.name,
-        location: prop.location,
-        type: prop.type,
-        totalUnits,
-        occupiedUnits,
-        occupancyRate: parseFloat(occupancyRate.toFixed(1)),
-        avgRent: Math.floor(avgRent),
-        totalRevenue: Math.floor(totalRevenue),
-        vacantUnits,
-        leaseExpirations,
-        riskLevel
-      };
+    // Get actual occupancy data from database
+    const occupancyRecords = await prisma.occupancyData.findMany({
+      where: {
+        upload: {
+          userId: userId
+        }
+      },
+      include: {
+        upload: {
+          select: {
+            createdAt: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
+
+    // Transform database occupancy data to API format
+    const occupancyData = occupancyRecords.map(record => ({
+      propertyId: record.propertyId,
+      propertyName: record.propertyName,
+      location: record.location,
+      type: record.propertyType,
+      totalUnits: record.totalUnits,
+      occupiedUnits: record.occupiedUnits,
+      occupancyRate: parseFloat(record.occupancyRate.toFixed(1)), // Already in percentage format
+      avgRent: Math.floor(record.averageRent),
+      totalRevenue: Math.floor(record.totalRevenue),
+      vacantUnits: record.vacantUnits,
+      leaseExpirations: record.leaseExpirations,
+      riskLevel: record.riskLevel
+    }));
 
     return NextResponse.json(occupancyData, { status: 200 });
   } catch (error: any) {

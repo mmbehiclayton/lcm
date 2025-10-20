@@ -98,11 +98,11 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
   }));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Transaction Type Distribution */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Type Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Transaction Type Distribution</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
               data={transactionTypeData}
@@ -125,9 +125,9 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
       </div>
 
       {/* Transaction Status */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Status</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Transaction Status</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={statusData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -139,9 +139,9 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
       </div>
 
       {/* Transaction Amounts by Property */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Transaction Amounts by Property</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Transaction Amounts by Property</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={amountByPropertyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -153,9 +153,9 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
       </div>
 
       {/* Monthly Transaction Trend */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Transaction Trend</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Monthly Transaction Trend</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={monthlyTransactionData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -173,9 +173,9 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
       </div>
 
       {/* Amount vs Fees Analysis */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Amount vs Fees Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Amount vs Fees Analysis</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <LineChart data={transactionTrendData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -201,9 +201,9 @@ export function TransactionAnalyticsCharts({ transactions, analysis }: Transacti
       </div>
 
       {/* Fee Percentage Analysis */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Fee Percentage Analysis</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Fee Percentage Analysis</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={feesAnalysisData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />

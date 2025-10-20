@@ -32,6 +32,25 @@ export async function GET(req: NextRequest) {
       }
     });
 
+    // Get actual predictive data from database
+    const predictiveRecords = await prisma.predictiveData.findMany({
+      where: {
+        upload: {
+          userId: userId
+        }
+      },
+      include: {
+        upload: {
+          select: {
+            createdAt: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
     // Generate predictive models data
     const models = [
       {
@@ -60,37 +79,23 @@ export async function GET(req: NextRequest) {
       }
     ];
 
-    // Generate predictions based on real property data
-    const predictions = properties.map((prop, index) => {
-      const currentValue = prop.currentValue || 0;
-      const noi = prop.noi || 0;
-      const occupancyRate = prop.occupancyRate || 0;
-      
-      // Calculate predicted value based on NOI yield and occupancy
-      const noiYield = currentValue > 0 ? noi / currentValue : 0;
-      const growthFactor = 1 + (Math.random() * 0.1 - 0.05); // Random growth between -5% and +5%
-      const predictedValue = currentValue * growthFactor;
-      const growthRate = ((predictedValue / currentValue) - 1) * 100;
-      
-      // Calculate confidence based on data quality
-      let confidence = 70;
-      if (occupancyRate > 0.8) confidence += 10;
-      if (noiYield > 0.05) confidence += 10;
-      if (prop.epcRating) confidence += 5;
-      if (prop.maintenanceScore && prop.maintenanceScore > 7) confidence += 5;
-      
-      confidence = Math.min(confidence, 95); // Cap at 95%
-
-      return {
-        propertyId: prop.id,
-        propertyName: prop.name,
-        currentValue,
-        predictedValue: Math.floor(predictedValue),
-        growthRate: parseFloat(growthRate.toFixed(1)),
-        confidence: Math.floor(confidence),
-        timeframe: '12 months'
-      };
-    });
+    // Transform database predictive data to API format
+    const predictions = predictiveRecords.map(record => ({
+      propertyId: record.propertyId,
+      propertyName: record.propertyName,
+      currentValue: record.currentValue,
+      predictedValue: record.predictedValue || record.currentValue,
+      growthRate: record.predictedValue ? 
+        parseFloat((((record.predictedValue / record.currentValue) - 1) * 100).toFixed(1)) : 0,
+      confidence: record.confidence || 75,
+      timeframe: '12 months',
+      historicalValues: record.historicalValues,
+      marketTrends: record.marketTrends,
+      economicIndicators: record.economicIndicators,
+      locationScore: record.locationScore,
+      propertyAge: record.propertyAge,
+      condition: record.condition
+    }));
 
     return NextResponse.json({
       models,

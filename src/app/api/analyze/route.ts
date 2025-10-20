@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import {
   calculateEnhancedPropertyScores,
   getEnhancedStrategyWeights,
@@ -7,16 +9,24 @@ import {
   assessEnhancedRiskLevel,
   calculatePerformanceGrade,
   generateEnhancedRecommendations,
+  computeLeaseMaturityExposure,
+  computeOccupancyEfficiency,
+  computeSustainabilityFlag,
+  determineSuggestedAction,
   type PropertyData,
   type AnalysisResponse
 } from '@/lib/analytics-engine';
+
 export async function POST(req: NextRequest) {
   try {
-    const { userId, strategy }: { userId: string; strategy: string } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const userId = session.user.id;
+    const { strategy }: { strategy: string } = await req.json();
 
     // First get uploads for the user, then get properties
     const uploads = await prisma.upload.findMany({
@@ -47,7 +57,7 @@ export async function POST(req: NextRequest) {
     }));
 
     // Calculate individual scores with enhanced algorithms
-    const propertyScores = [];
+    const propertyScores: Array<Record<string, any>> = [];
     for (const property of properties) {
       const scores = calculateEnhancedPropertyScores(property, strategy);
       propertyScores.push({
@@ -69,13 +79,32 @@ export async function POST(req: NextRequest) {
     // Generate comprehensive recommendations
     const recommendations = generateEnhancedRecommendations(propertyScores, strategy, properties);
     
+    // Additional outputs per requirements
+    const occupancyEfficiency = computeOccupancyEfficiency(properties);
+    const sustainabilityFlag = computeSustainabilityFlag(properties);
+    const leaseMaturityExposure = computeLeaseMaturityExposure(properties, propertyScores);
+
+    // Append suggested action per asset based on weighted health (simple proxy: avg of key sub-scores)
+    const assets = propertyScores.map(ps => {
+      const sub = (ps.lease_score + ps.occupancy_score + ps.noi_score + ps.energy_score + ps.capex_score) / 5;
+      return {
+        asset_id: ps.property_id,
+        health_score: Math.round(sub),
+        recommended_action: determineSuggestedAction(sub)
+      };
+    });
+
     // Create analysis result
     const analysisResult: AnalysisResponse = {
       portfolio_health: portfolioHealth,
       risk_level: assessEnhancedRiskLevel(portfolioHealth, propertyScores),
       performance_grade: calculatePerformanceGrade(portfolioHealth),
       recommendations: recommendations,
-      property_scores: propertyScores
+      property_scores: propertyScores,
+      occupancy_efficiency: occupancyEfficiency,
+      sustainability_flag: sustainabilityFlag,
+      lease_maturity_exposure: leaseMaturityExposure,
+      assets
     };
 
     // Save analysis result to DB
@@ -84,13 +113,7 @@ export async function POST(req: NextRequest) {
         userId: userId,
         uploadId: uploads[0]?.id || '', // Use first upload ID
         strategy: strategy,
-        results: JSON.parse(JSON.stringify({
-          portfolioHealth: analysisResult.portfolio_health,
-          riskLevel: analysisResult.risk_level,
-          performanceGrade: analysisResult.performance_grade,
-          recommendations: analysisResult.recommendations,
-          propertyScores: analysisResult.property_scores
-        }))
+        results: JSON.parse(JSON.stringify(analysisResult))
       },
     });
 

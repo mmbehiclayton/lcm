@@ -22,31 +22,57 @@ export async function POST(req: NextRequest) {
   const userId = session.user.id;
 
   try {
-    // Get predictive data from database
+    // First try to get from Property table (which has all needed fields)
+    const propertyData = await prisma.property.findMany({
+      where: { upload: { userId: userId } },
+      include: { upload: { select: { createdAt: true } } }
+    });
+
+    // Fallback to PredictiveData table if no properties
     const predictiveData = await prisma.predictiveData.findMany({
       where: { upload: { userId: userId } },
       include: { upload: { select: { createdAt: true } } }
     });
 
-    if (predictiveData.length === 0) {
-      return NextResponse.json({ error: 'No predictive data found for this user' }, { status: 404 });
+    if (propertyData.length === 0 && predictiveData.length === 0) {
+      return NextResponse.json({ error: 'No property data found for this user' }, { status: 404 });
     }
 
-    // Transform predictive data for analysis
-    const properties: PropertyData[] = predictiveData.map(data => ({
-      property_id: data.propertyId,
-      name: data.propertyName,
-      type: data.propertyType.toLowerCase() as 'office' | 'retail' | 'industrial' | 'residential',
-      location: data.location,
-      purchase_price: 0, // Not available in predictive data
-      current_value: data.currentValue,
-      noi: 0, // Not available in predictive data
-      occupancy_rate: 0.8, // Default value
-      purchase_date: undefined,
-      lease_expiry_date: undefined,
-      epc_rating: undefined,
-      maintenance_score: undefined
-    }));
+    // Transform property data for analysis (preferred as it has all fields)
+    let properties: PropertyData[] = [];
+    
+    if (propertyData.length > 0) {
+      properties = propertyData.map((prop: any) => ({
+        property_id: prop.propertyId,
+        name: prop.name,
+        type: (prop.type || 'office').toLowerCase() as 'office' | 'retail' | 'industrial' | 'residential',
+        location: prop.location || 'Unknown',
+        purchase_price: prop.purchasePrice || 0,
+        current_value: prop.currentValue || 0,
+        noi: prop.noi || 0,
+        occupancy_rate: prop.occupancyRate || 0.8,
+        purchase_date: prop.purchaseDate,
+        lease_expiry_date: prop.leaseExpiryDate,
+        epc_rating: prop.epcRating,
+        maintenance_score: prop.maintenanceScore
+      }));
+    } else {
+      // Fallback to predictive data with limited fields
+      properties = predictiveData.map(data => ({
+        property_id: data.propertyId,
+        name: data.propertyName,
+        type: data.propertyType.toLowerCase() as 'office' | 'retail' | 'industrial' | 'residential',
+        location: data.location,
+        purchase_price: 0,
+        current_value: data.currentValue,
+        noi: 0,
+        occupancy_rate: 0.8,
+        purchase_date: undefined,
+        lease_expiry_date: undefined,
+        epc_rating: undefined,
+        maintenance_score: undefined
+      }));
+    }
 
     // Create mock market data for analysis
     const marketData: MarketData[] = properties.map(prop => ({
@@ -82,14 +108,20 @@ export async function POST(req: NextRequest) {
     };
 
     // Save analysis results to database
-    const createdAnalysis = await prisma.analysis.create({
-      data: {
-        userId: userId,
-        uploadId: predictiveData[0]?.uploadId || '',
-        strategy: 'predictive',
-        results: JSON.parse(JSON.stringify(analysisResult))
-      },
-    });
+    const uploadId = propertyData[0]?.uploadId || predictiveData[0]?.uploadId || '';
+    
+    if (!uploadId) {
+      console.warn('No uploadId found, analysis will not be saved to database');
+    } else {
+      await prisma.analysis.create({
+        data: {
+          userId: userId,
+          uploadId: uploadId,
+          strategy: 'predictive',
+          results: JSON.parse(JSON.stringify(analysisResult))
+        },
+      });
+    }
 
     return NextResponse.json({ 
       message: 'Predictive analysis completed successfully', 

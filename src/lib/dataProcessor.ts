@@ -7,20 +7,36 @@ export class DataProcessor {
    */
   static async parseCSV(filePath: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
-      Papa.parse(filePath, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          try {
-            resolve(results.data as any[]);
-          } catch (error) {
-            reject(new Error(`CSV parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      // Read the file content first
+      const fs = require('fs');
+      
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        console.log('File content length:', fileContent.length);
+        console.log('File content preview:', fileContent.substring(0, 200));
+        
+        Papa.parse(fileContent, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            try {
+              console.log('CSV parsing results:', results.data.length, 'records');
+              console.log('Parsed data preview:', results.data.slice(0, 2));
+              resolve(results.data as any[]);
+            } catch (error) {
+              console.error('CSV parsing complete error:', error);
+              reject(new Error(`CSV parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+            }
+          },
+          error: (error: any) => {
+            console.error('CSV parsing error:', error);
+            reject(new Error(`CSV parsing failed: ${error.message}`));
           }
-        },
-        error: (error: any) => {
-          reject(new Error(`CSV parsing failed: ${error.message}`));
-        }
-      });
+        });
+      } catch (error) {
+        console.error('File reading error:', error);
+        reject(new Error(`Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      }
     });
   }
 
@@ -73,9 +89,9 @@ export class DataProcessor {
   static cleanPropertyData(properties: any[]): any[] {
     return properties.map(property => ({
       ...property,
-      name: property.name?.trim() || '',
+      property_name: property.property_name?.trim() || property.name?.trim() || '',
+      property_type: property.property_type?.trim() || property.type?.trim() || '',
       location: property.location?.trim() || '',
-      type: property.type?.trim() || '',
       // Ensure numeric values are properly formatted
       purchase_price: Number(property.purchase_price || 0),
       current_value: Number(property.current_value || 0),
@@ -99,15 +115,26 @@ export class DataProcessor {
     const missingFields: string[] = [];
     const warnings: string[] = [];
     
-    // Check for required fields
-    const requiredFields = ['property_id', 'name', 'type', 'location', 'current_value', 'noi', 'occupancy_rate'];
+    // Check for required fields - support both naming conventions
+    const requiredFields = ['property_id', 'location', 'current_value', 'noi', 'occupancy_rate'];
     
     properties.forEach((property, index) => {
+      // Check required fields
       requiredFields.forEach(field => {
         if (!property[field]) {
           missingFields.push(`Row ${index + 1}: ${field}`);
         }
       });
+      
+      // Check for property_name or name
+      if (!property.property_name && !property.name) {
+        missingFields.push(`Row ${index + 1}: property_name`);
+      }
+      
+      // Check for property_type or type
+      if (!property.property_type && !property.type) {
+        missingFields.push(`Row ${index + 1}: property_type`);
+      }
       
       // Check for data quality issues
       if (property.occupancy_rate && property.occupancy_rate > 1) {
@@ -170,19 +197,30 @@ export class DataProcessor {
    * Clean and validate lease data
    */
   static cleanLeaseData(data: any[]): any[] {
+    // Parse boolean values from CSV (Yes/No or true/false)
+    const parseBoolean = (value: any): boolean => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') {
+        const normalized = value.toLowerCase().trim();
+        return normalized === 'yes' || normalized === 'true' || normalized === '1';
+      }
+      return false;
+    };
+
     return data.map(lease => ({
-      lease_id: lease.lease_id || lease.leaseId,
-      property_id: lease.property_id || lease.propertyId,
-      tenant_name: lease.tenant_name || lease.tenantName,
+      lease_id: lease.lease_id?.trim() || lease.leaseId?.trim() || '',
+      property_id: lease.property_id?.trim() || lease.propertyId?.trim() || '',
+      tenant_id: lease.tenant_id?.trim() || lease.tenantId?.trim() || null,
+      tenant_name: lease.tenant_name?.trim() || lease.tenantName?.trim() || '',
       lease_start: lease.lease_start || lease.leaseStart,
       lease_end: lease.lease_end || lease.leaseEnd,
       monthly_rent: parseFloat(lease.monthly_rent || lease.monthlyRent || 0),
-      escalation_rate: parseFloat(lease.escalation_rate || lease.escalationRate || 0),
+      escalation_rate: lease.escalation_rate || lease.escalationRate ? parseFloat(lease.escalation_rate || lease.escalationRate) : null,
       security_deposit: parseFloat(lease.security_deposit || lease.securityDeposit || 0),
-      renewal_option: lease.renewal_option === 'Yes' || lease.renewalOption === true,
-      break_clause: lease.break_clause === 'Yes' || lease.breakClause === true,
-      tenant_credit_rating: lease.tenant_credit_rating || lease.tenantCreditRating,
-      lease_status: lease.lease_status || lease.leaseStatus || 'Active'
+      renewal_option: parseBoolean(lease.renewal_option || lease.renewalOption),
+      break_clause: parseBoolean(lease.break_clause || lease.breakClause),
+      tenant_credit_rating: lease.tenant_credit_rating?.trim() || lease.tenantCreditRating?.trim() || null,
+      lease_status: lease.lease_status?.trim() || lease.leaseStatus?.trim() || 'Active'
     }));
   }
 
@@ -247,20 +285,129 @@ export class DataProcessor {
    * Clean and validate transaction data
    */
   static cleanTransactionData(data: any[]): any[] {
-    return data.map(transaction => ({
-      transaction_id: transaction.transaction_id || transaction.transactionId,
-      property_id: transaction.property_id || transaction.propertyId,
-      transaction_type: transaction.transaction_type || transaction.transactionType,
-      transaction_date: transaction.transaction_date || transaction.transactionDate,
-      amount: parseFloat(transaction.amount || 0),
-      counterparty: transaction.counterparty || transaction.counterpartyName,
-      status: transaction.status || 'Completed',
-      legal_fees: parseFloat(transaction.legal_fees || transaction.legalFees || 0),
-      brokerage_fees: parseFloat(transaction.brokerage_fees || transaction.brokerageFees || 0),
-      other_fees: parseFloat(transaction.other_fees || transaction.otherFees || 0),
-      net_amount: parseFloat(transaction.net_amount || transaction.netAmount || 0),
-      notes: transaction.notes || transaction.transactionNotes
-    }));
+    console.log('Cleaning transaction data, sample record:', data[0]);
+    console.log('Available fields:', Object.keys(data[0] || {}));
+    
+    return data.map(transaction => {
+      // Validate and clean transaction type
+      const allowedTypes = ['rent', 'service', 'deposit', 'purchase', 'sale', 'refinance', 'other'];
+      const transactionType = (transaction.transaction_type || transaction.transactionType || 'other').toLowerCase();
+      const validType = allowedTypes.includes(transactionType) ? transactionType : 'other';
+      
+      console.log('Processing transaction:', {
+        original_type: transaction.transaction_type || transaction.transactionType,
+        cleaned_type: validType,
+        amount: transaction.amount,
+        counterparty: transaction.counterparty
+      });
+      
+      // Parse and validate amounts
+      const amount = parseFloat(transaction.amount || 0);
+      
+      // Handle fees - support both single 'fees' field and separate fee fields
+      const singleFees = parseFloat(transaction.fees || 0);
+      const legalFees = parseFloat(transaction.legal_fees || transaction.legalFees || 0);
+      const brokerageFees = parseFloat(transaction.brokerage_fees || transaction.brokerageFees || 0);
+      const otherFees = parseFloat(transaction.other_fees || transaction.otherFees || 0);
+      
+      // If single 'fees' field is provided, use it as legal_fees; otherwise use separate fields
+      const finalLegalFees = singleFees > 0 ? singleFees : legalFees;
+      const finalBrokerageFees = singleFees > 0 ? 0 : brokerageFees;
+      const finalOtherFees = singleFees > 0 ? 0 : otherFees;
+      const totalFees = finalLegalFees + finalBrokerageFees + finalOtherFees;
+      
+      // Calculate net amount if not provided
+      const providedNetAmount = parseFloat(transaction.net_amount || transaction.netAmount || 0);
+      const calculatedNetAmount = amount - totalFees;
+      const netAmount = providedNetAmount > 0 ? providedNetAmount : calculatedNetAmount;
+      
+      // Validate and format date
+      let transactionDate = transaction.transaction_date || transaction.transactionDate;
+      if (transactionDate) {
+        try {
+          const date = new Date(transactionDate);
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid date format');
+          }
+          transactionDate = date.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+        } catch (error) {
+          console.warn(`Invalid date format for transaction ${transaction.transaction_id}: ${transactionDate}`);
+          transactionDate = new Date().toISOString().split('T')[0]; // Default to today
+        }
+      } else {
+        transactionDate = new Date().toISOString().split('T')[0]; // Default to today
+      }
+      
+      // Validate status
+      const allowedStatuses = ['completed', 'pending', 'failed', 'cancelled'];
+      const status = (transaction.status || 'completed').toLowerCase();
+      const validStatus = allowedStatuses.includes(status) ? status : 'completed';
+      
+      // Parse due_date if provided
+      let dueDate = transaction.due_date || transaction.dueDate;
+      if (dueDate) {
+        try {
+          const date = new Date(dueDate);
+          if (!isNaN(date.getTime())) {
+            dueDate = date.toISOString().split('T')[0];
+          } else {
+            dueDate = transactionDate; // Default to transaction date
+          }
+        } catch (error) {
+          dueDate = transactionDate;
+        }
+      } else {
+        dueDate = transactionDate;
+      }
+
+      return {
+        transaction_id: transaction.transaction_id || transaction.transactionId,
+        property_id: transaction.property_id || transaction.propertyId,
+        tenant_id: transaction.tenant_id || transaction.tenantId || null,
+        lease_id: transaction.lease_id || transaction.leaseId || null,
+        transaction_type: validType,
+        transaction_date: transactionDate,
+        due_date: dueDate,
+        amount: amount,
+        expected_amount: parseFloat(transaction.expected_amount || transaction.expectedAmount || amount),
+        counterparty: transaction.counterparty || transaction.counterpartyName || 'Unknown',
+        status: validStatus,
+        payment_method: transaction.payment_method || transaction.paymentMethod || null,
+        reference: transaction.reference || transaction.ref || null,
+        legal_fees: finalLegalFees,
+        brokerage_fees: finalBrokerageFees,
+        other_fees: finalOtherFees,
+        total_fees: totalFees,
+        net_amount: netAmount,
+        notes: transaction.notes || transaction.transactionNotes || '',
+        // Add validation flags
+        has_amount_validation: amount > 0,
+        has_fee_validation: totalFees >= 0,
+        has_date_validation: !!transactionDate,
+        data_quality_score: this.calculateTransactionDataQuality(transaction, amount, totalFees, transactionDate)
+      };
+    });
+  }
+  
+  /**
+   * Calculate data quality score for transaction
+   */
+  private static calculateTransactionDataQuality(transaction: any, amount: number, totalFees: number, date: string): number {
+    let score = 100;
+    
+    // Deduct points for missing critical fields
+    if (!transaction.transaction_id && !transaction.transactionId) score -= 20;
+    if (!transaction.property_id && !transaction.propertyId) score -= 20;
+    if (amount <= 0) score -= 15;
+    if (!transaction.counterparty && !transaction.counterpartyName) score -= 10;
+    if (!date) score -= 10;
+    
+    // Deduct points for suspicious patterns
+    if (totalFees > amount * 0.1) score -= 10; // Fees > 10% of amount
+    if (transaction.legal_fees && transaction.legal_fees < 0) score -= 5;
+    if (transaction.brokerage_fees && transaction.brokerage_fees < 0) score -= 5;
+    
+    return Math.max(score, 0);
   }
 
   /**

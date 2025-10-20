@@ -16,7 +16,8 @@ import {
   Download,
   Upload,
   Target,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react';
 import { UploadModal } from '@/components/modals/UploadModal';
 import { PortfolioHealthChart } from '@/components/charts/PortfolioHealthChart';
@@ -62,7 +63,7 @@ function PortfolioContent() {
   const analysisId = searchParams.get('analysisId');
   const { data: session } = useSession();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'analysis'>('overview');
+  // Advanced tab removed; single overview page
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +71,7 @@ function PortfolioContent() {
   const [selectedStrategy, setSelectedStrategy] = useState<'growth' | 'hold' | 'divest'>('hold');
   const [showUpload, setShowUpload] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [filteredProperties, setFilteredProperties] = useState<any[]>([]);
@@ -258,42 +260,71 @@ function PortfolioContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading portfolio data...</p>
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
+            <Building2 className="h-8 w-8 text-blue-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <p className="mt-6 text-base font-medium text-gray-700">Loading portfolio data...</p>
+          <p className="mt-2 text-sm text-gray-500">Please wait while we fetch your properties</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* Page Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Portfolio & Analysis</h1>
-            <p className="mt-2 text-gray-600">Comprehensive view of your real estate portfolio with advanced analytics</p>
+      <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-purple-700 rounded-xl shadow-lg p-8 text-white">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-3">
+              <Building2 className="h-10 w-10" />
+              <h1 className="text-4xl font-bold">Portfolio & Analysis</h1>
+            </div>
+            <p className="text-blue-100 text-base max-w-2xl">
+              Comprehensive view of your real estate portfolio with advanced analytics and performance insights
+            </p>
           </div>
-                  <div className="flex space-x-3">
-                    <button
-                      onClick={() => setShowUpload(!showUpload)}
-                      className="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Portfolio Data
-                    </button>
-                    {analysis && (
-                      <button
-                        onClick={() => handleExport('pdf')}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Export Report
-                      </button>
-                    )}
-                  </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={async () => {
+                setIsRefreshing(true);
+                try {
+                  await fetchPortfolioData();
+                  await fetchAnalysis();
+                  toast.success('Portfolio data refreshed');
+                } catch (e) {
+                  toast.error('Failed to refresh');
+                } finally {
+                  setIsRefreshing(false);
+                }
+              }}
+              disabled={isRefreshing}
+              className="inline-flex items-center justify-center p-3 bg-white/10 hover:bg-white/20 text-white rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-200 hover:scale-105"
+              title="Refresh"
+              aria-label="Refresh"
+            >
+              <RefreshCw className={`h-5 w-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setShowUpload(!showUpload)}
+              className="inline-flex items-center px-6 py-3 bg-white text-blue-700 font-semibold rounded-lg shadow-md hover:shadow-xl transition-all duration-200 transform hover:scale-105 hover:bg-blue-50"
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              Upload Data
+            </button>
+            {analysis && (
+              <button
+                onClick={() => handleExport('pdf')}
+                className="inline-flex items-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg backdrop-blur-sm border border-white/20 transition-all duration-200"
+              >
+                <Download className="h-5 w-5 mr-2" />
+                Export
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -325,83 +356,54 @@ function PortfolioContent() {
         onUploadSuccess={() => window.location.reload()}
       />
 
-      {/* Tab Navigation */}
-      <div className="mb-8">
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'overview'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Portfolio Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('analysis')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'analysis'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Advanced Analysis
-            </button>
-          </nav>
-        </div>
-      </div>
-
-      {/* Portfolio Overview Tab */}
-      {activeTab === 'overview' && (
+      {/* Portfolio Overview */}
         <div>
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Building2 className="h-8 w-8 text-blue-600" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-4 border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide mb-1">Total Properties</p>
+                  <p className="text-2xl font-bold text-blue-900 truncate">{portfolioData.totalProperties}</p>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Properties</p>
-                  <p className="text-2xl font-semibold text-gray-900">{portfolioData.totalProperties}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <DollarSign className="h-8 w-8 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Value</p>
-                  <p className="text-2xl font-semibold text-gray-900">{formatCurrency(portfolioData.totalValue)}</p>
+                <div className="bg-blue-200 p-2.5 rounded-lg flex-shrink-0 ml-2">
+                  <Building2 className="h-6 w-6 text-blue-700" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <TrendingUp className="h-8 w-8 text-purple-600" />
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-4 border border-green-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mb-1">Total Value</p>
+                  <p className="text-2xl font-bold text-green-900 truncate">{formatCurrency(portfolioData.totalValue)}</p>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total NOI</p>
-                  <p className="text-2xl font-semibold text-gray-900">{formatCurrency(portfolioData.totalNOI)}</p>
+                <div className="bg-green-200 p-2.5 rounded-lg flex-shrink-0 ml-2">
+                  <DollarSign className="h-6 w-6 text-green-700" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Target className="h-8 w-8 text-orange-600" />
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-4 border border-purple-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide mb-1">Total NOI</p>
+                  <p className="text-2xl font-bold text-purple-900 truncate">{formatCurrency(portfolioData.totalNOI)}</p>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Avg Occupancy</p>
-                  <p className="text-2xl font-semibold text-gray-900">{(portfolioData.averageOccupancy * 100).toFixed(1)}%</p>
+                <div className="bg-purple-200 p-2.5 rounded-lg flex-shrink-0 ml-2">
+                  <TrendingUp className="h-6 w-6 text-purple-700" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 p-4 border border-orange-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide mb-1">Avg Occupancy</p>
+                  <p className="text-2xl font-bold text-orange-900 truncate">{(portfolioData.averageOccupancy * 100).toFixed(1)}%</p>
+                </div>
+                <div className="bg-orange-200 p-2.5 rounded-lg flex-shrink-0 ml-2">
+                  <Target className="h-6 w-6 text-orange-700" />
                 </div>
               </div>
             </div>
@@ -452,249 +454,137 @@ function PortfolioContent() {
           />
 
           {/* Properties Table */}
-          <div className="bg-white shadow rounded-lg overflow-hidden mb-8">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Portfolio Properties</h3>
+          <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-200">
+            <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Building2 className="h-5 w-5 text-gray-600" />
+                  <h3 className="text-lg font-bold text-gray-900">Portfolio Properties</h3>
+                </div>
+                <span className="text-sm text-gray-500 font-medium">
+                  {filteredProperties.length} {filteredProperties.length === 1 ? 'Property' : 'Properties'}
+                </span>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Property
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Location
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Value
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       NOI
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Occupancy
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Performance
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-5 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
                       Purchase Date
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredProperties.map((property) => (
-                    <tr key={property.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{property.name}</div>
-                          <div className="text-sm text-gray-500">ID: {property.id}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                          {property.location}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {property.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(property.value)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(property.noi)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{(property.occupancy * 100).toFixed(1)}%</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          property.performance.startsWith('A') ? 'bg-green-100 text-green-800' :
-                          property.performance.startsWith('B') ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
-                          {property.performance}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {new Date(property.purchaseDate).toLocaleDateString()}
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {filteredProperties.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-12 text-center">
+                        <div className="flex flex-col items-center justify-center">
+                          <div className="bg-gray-100 rounded-full p-4 mb-4">
+                            <Building2 className="h-12 w-12 text-gray-400" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Properties Found</h3>
+                          <p className="text-sm text-gray-500 mb-4">
+                            {searchQuery || Object.keys(filters).length > 0 
+                              ? 'Try adjusting your search or filters' 
+                              : 'Upload portfolio data to get started'}
+                          </p>
+                          {!searchQuery && Object.keys(filters).length === 0 && (
+                            <button
+                              onClick={() => setShowUpload(true)}
+                              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Upload Portfolio
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredProperties.map((property) => (
+                      <tr key={property.id} className="hover:bg-blue-50 transition-colors duration-150">
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-semibold text-gray-900">{property.name}</div>
+                            <div className="text-xs text-gray-500">ID: {property.id}</div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-700">
+                            <MapPin className="h-4 w-4 mr-1.5 text-gray-400" />
+                            {property.location}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200">
+                            {property.type}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {formatCurrency(property.value)}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {formatCurrency(property.noi)}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <div className="text-sm font-semibold text-gray-900">{(property.occupancy * 100).toFixed(1)}%</div>
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-gradient-to-r from-green-400 to-green-600 h-1.5 rounded-full" 
+                                style={{ width: `${(property.occupancy * 100).toFixed(0)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${
+                            property.performance.startsWith('A') ? 'bg-green-100 text-green-700 border-green-200' :
+                            property.performance.startsWith('B') ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                            'bg-red-100 text-red-700 border-red-200'
+                          }`}>
+                            <Star className="h-3 w-3 mr-1" />
+                            {property.performance}
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap text-sm text-gray-600">
+                          <div className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1.5 text-gray-400" />
+                            {new Date(property.purchaseDate).toLocaleDateString()}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </div>
         </div>
-      )}
 
-      {/* Advanced Analysis Tab */}
-      {activeTab === 'analysis' && (
-        <div>
-          {!uploadId && !analysisId ? (
-            <div className="text-center py-12">
-              <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">No Analysis Data</h2>
-              <p className="text-lg text-gray-600 mb-8">
-                Upload your real estate data to start analyzing your portfolio.
-              </p>
-              <Link
-                href="/dashboard/upload"
-                className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Upload Data
-              </Link>
-            </div>
-          ) : error ? (
-            <div className="text-center py-12">
-              <AlertTriangle className="h-16 w-16 text-red-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Analysis Failed</h2>
-              <p className="text-lg text-gray-600">{error}</p>
-            </div>
-          ) : !analysis ? (
-            <div className="text-center py-12">
-              <AlertTriangle className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">No Analysis Results</h2>
-              <p className="text-lg text-gray-600">
-                It seems there are no analysis results for the provided data.
-              </p>
-            </div>
-          ) : (
-            <div>
-              {/* Strategy Selector */}
-              <div className="mb-8 bg-white shadow rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Select Analysis Strategy</h2>
-                <div className="flex space-x-4">
-                  <button
-                    onClick={() => handleStrategyChange('growth')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${selectedStrategy === 'growth' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                  >
-                    Growth
-                  </button>
-                  <button
-                    onClick={() => handleStrategyChange('hold')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${selectedStrategy === 'hold' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                  >
-                    Hold
-                  </button>
-                  <button
-                    onClick={() => handleStrategyChange('divest')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${selectedStrategy === 'divest' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                  >
-                    Divest
-                  </button>
-                </div>
-              </div>
-
-              {/* Analysis Summary */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white shadow rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Portfolio Health</h2>
-                  <div className="flex items-center justify-between">
-                    <p className="text-5xl font-bold" style={{ color: getPerformanceColor(analysis.performanceGrade) }}>
-                      {(analysis.portfolioHealth * 100).toFixed(1)}%
-                    </p>
-                    <PortfolioHealthChart 
-                      data={portfolioData.properties.map(prop => ({
-                        property: prop.name,
-                        healthScore: Math.floor(Math.random() * 40) + 60, // Random score 60-100
-                        riskLevel: Math.random() > 0.5 ? 'Low' : 'Medium'
-                      }))}
-                    />
-                  </div>
-                  <p className="mt-4 text-gray-600">
-                    Overall health of your portfolio based on selected strategy.
-                  </p>
-                </div>
-
-                <div className="bg-white shadow rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Risk Level</h2>
-                  <div className="flex items-center justify-between">
-                    <p className="text-5xl font-bold" style={{ color: getRiskColor(analysis.riskLevel).split(' ')[0] }}>
-                      {analysis.riskLevel}
-                    </p>
-                    <RiskDistributionChart 
-                      data={[
-                        { name: 'Low Risk', value: Math.floor(Math.random() * 5) + 3, color: '#10B981' },
-                        { name: 'Medium Risk', value: Math.floor(Math.random() * 3) + 1, color: '#F59E0B' },
-                        { name: 'High Risk', value: Math.floor(Math.random() * 2), color: '#EF4444' }
-                      ]}
-                    />
-                  </div>
-                  <p className="mt-4 text-gray-600">
-                    Assessed risk level of your current portfolio.
-                  </p>
-                </div>
-
-                <div className="bg-white shadow rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Performance Grade</h2>
-                  <div className="flex items-center justify-between">
-                    <p className="text-5xl font-bold" style={{ color: getPerformanceColor(analysis.performanceGrade) }}>
-                      {analysis.performanceGrade}
-                    </p>
-                    {analysis.performanceGrade.startsWith('A') ? (
-                      <CheckCircle className="h-16 w-16 text-green-500" />
-                    ) : (
-                      <AlertTriangle className="h-16 w-16 text-yellow-500" />
-                    )}
-                  </div>
-                  <p className="mt-4 text-gray-600">
-                    Overall performance grade of your portfolio.
-                  </p>
-                </div>
-              </div>
-
-              {/* Key Metrics */}
-              <div className="bg-white shadow rounded-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Key Metrics</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Total Portfolio Value</dt>
-                    <dd className="mt-1 text-lg font-semibold text-gray-900">{formatCurrency(analysis.metrics.totalValue)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Average NOI</dt>
-                    <dd className="mt-1 text-lg font-semibold text-gray-900">{formatCurrency(analysis.metrics.averageNOI)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Average Occupancy</dt>
-                    <dd className="mt-1 text-lg font-semibold text-gray-900">{formatPercentage(analysis.metrics.averageOccupancy)}</dd>
-                  </div>
-                </div>
-              </div>
-
-              {/* Recommendations */}
-              <div className="bg-white shadow rounded-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Recommendations</h2>
-                <ul className="list-disc list-inside text-gray-600 space-y-2">
-                  {analysis.recommendations.map((rec, index) => (
-                    <li key={index}>{rec}</li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Property Table */}
-              {properties.length > 0 && (
-                <div className="bg-white shadow rounded-lg p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-4">Individual Property Performance</h2>
-                  <PropertyTable properties={properties} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Advanced Analysis section removed in favor of unified overview */}
     </div>
   );
 }

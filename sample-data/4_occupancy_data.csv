@@ -1,0 +1,22 @@
+property_id,property_name,property_type,location,total_units,occupied_units,occupancy_rate,average_rent,total_revenue,vacant_units,lease_expirations,risk_level,desk_usage,badge_ins,meeting_room_usage,lighting_usage,temperature_avg,avg_occupancy_3_months,avg_occupancy_6_months,avg_occupancy_12_months,peak_usage,permitted_usage,subletting_allowed,coworking_restrictions,max_occupancy,business_type,headcount_estimate,actual_headcount
+PROP-001,Downtown Tech Hub,Office,"London, EC2A 1AA",50,48,96.0,4500,216000,2,3,Low,92,450,85,88,21.5,94.0,92.5,90.0,98,general office use,true,false,50,Technology,75,72
+PROP-002,Canary Wharf Tower,Office,"London, E14 5AB",80,75,94.0,4800,380000,5,4,Low,90,710,88,91,21.0,95.0,94.5,93.0,97,corporate office,false,false,85,Finance,120,115
+PROP-003,High Street Retail Plaza,Retail,"Manchester, M1 1AD",30,24,80.0,3200,76800,6,2,Medium,75,180,60,70,22.0,82.0,85.0,88.0,95,retail only,false,true,30,Retail,40,36
+PROP-004,Riverside Apartments,Residential,"Edinburgh, EH1 1BB",120,108,90.0,1800,194400,12,8,Medium,85,0,0,80,21.0,88.0,87.0,85.0,95,residential only,false,true,120,Residential,110,108
+PROP-005,Business Innovation Centre,Office,"Bristol, BS1 4DJ",40,35,87.5,3800,133000,5,4,Medium,82,320,75,85,22.5,85.0,83.0,80.0,92,office and coworking,true,false,45,Mixed Use,55,52
+PROP-006,Docklands Warehouse,Industrial,"Cardiff, CF10 4GA",8,8,100.0,12000,96000,0,1,Low,98,75,88,95,19.5,99.0,98.0,97.0,100,industrial storage,true,false,8,Manufacturing,15,16
+PROP-007,City Centre Retail Unit,Retail,"Leeds, LS1 1UR",25,18,72.0,2800,50400,7,5,High,65,120,45,62,23.0,70.0,68.0,75.0,85,retail and food service,false,true,25,Retail,28,24
+PROP-008,Suburban Office Park,Office,"Glasgow, G2 2AT",60,54,90.0,3500,189000,6,6,Low,88,500,80,86,21.0,91.0,90.0,89.0,96,general business use,true,false,65,Professional Services,85,81
+PROP-009,Student Accommodation,Residential,"Oxford, OX1 1BX",200,185,92.5,1200,222000,15,20,Medium,90,0,0,88,20.5,93.0,92.0,90.0,98,student housing,false,true,200,Education,185,185
+PROP-010,Tech Campus East,Office,"Cambridge, CB1 1PT",80,76,95.0,4200,319200,4,5,High,94,720,88,91,21.5,96.0,95.0,93.0,99,technology campus,true,false,85,Technology,105,110
+PROP-011,Logistics Hub North,Industrial,"Nottingham, NG1 1JW",12,11,91.7,18000,198000,1,2,Low,89,110,82,87,19.0,90.0,88.0,85.0,95,distribution centre,true,false,12,Logistics,28,30
+PROP-012,Shopping Centre Unit,Retail,"Newcastle, NE1 1SE",20,15,75.0,3000,45000,5,3,High,70,95,55,68,22.5,73.0,76.0,80.0,88,high street retail,false,true,20,Retail,22,20
+PROP-013,Corporate Plaza,Office,"Southampton, SO14 0PH",100,95,95.0,5000,475000,5,8,Low,96,890,92,94,21.0,95.5,94.0,92.0,98,corporate office,false,false,105,Corporate,145,152
+PROP-014,Waterside Mixed Use,Mixed,"Liverpool, L1 1JD",150,135,90.0,2500,337500,15,12,Medium,87,800,78,84,22.0,89.0,88.0,86.0,94,mixed commercial,true,false,160,Mixed Use,180,175
+PROP-015,Data Centre Facility,Industrial,"Reading, RG1 1AQ",5,5,100.0,25000,125000,0,1,Low,100,45,95,98,18.0,100.0,100.0,99.0,100,data centre operations,false,false,5,Technology,25,25
+PROP-016,Luxury Residences,Residential,"Bath, BA1 1SR",80,74,92.5,2200,162800,6,7,Low,91,0,0,89,21.5,93.0,92.0,91.0,96,luxury residential,false,true,80,Residential,75,74
+PROP-017,Flexible Workspace,Office,"Brighton, BN1 1YR",45,42,93.3,3900,163800,3,4,Low,89,380,82,87,22.0,92.0,91.0,88.0,96,flexible office space,true,true,50,Coworking,68,72
+PROP-018,Retail Warehouse,Retail,"Sheffield, S1 2JE",15,12,80.0,8500,102000,3,2,Medium,78,90,68,75,21.0,79.0,81.0,83.0,90,retail warehouse,false,false,15,Retail,35,32
+PROP-019,Science Park Building,Office,"Aberdeen, AB10 1FX",55,52,94.5,4800,249600,3,4,Low,93,490,86,91,20.5,94.0,93.0,91.0,97,research and development,true,false,60,Research,80,78
+PROP-020,Central Apartments,Residential,"Belfast, BT1 1NN",180,162,90.0,1600,259200,18,15,Medium,88,0,0,86,21.0,89.0,88.0,87.0,94,residential tower,false,true,180,Residential,162,162
+

@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Transform lease data for analysis
-    const leaseData: LeaseData[] = leases.map(lease => ({
+    const leaseData: LeaseData[] = leases.map((lease: any) => ({
       lease_id: lease.leaseId,
       property_id: lease.propertyId,
       tenant_name: lease.tenantName,
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     }));
 
     // Transform property data for analysis
-    const propertyData: PropertyData[] = properties.map(prop => ({
+    const propertyData: PropertyData[] = properties.map((prop: any) => ({
       property_id: prop.propertyId,
       name: prop.name,
       type: prop.type.toLowerCase() as 'office' | 'retail' | 'industrial' | 'residential',
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }));
 
     // Create mock market data for analysis
-    const marketData: MarketData[] = properties.map(prop => ({
+    const marketData: MarketData[] = properties.map((prop: any) => ({
       location: prop.location,
       property_type: prop.type.toLowerCase(),
       market_rent: (prop.currentValue || 0) * 0.05, // Estimate 5% yield
@@ -140,6 +140,31 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
+    // Get properties to enrich lease data with property names
+    const properties = await prisma.property.findMany({
+      where: { upload: { userId: userId } },
+      select: {
+        propertyId: true,
+        name: true,
+        type: true,
+        location: true
+      }
+    });
+
+    // Create a map for quick property lookup
+    const propertyMap = new Map(properties.map((p: any) => [p.propertyId, p]));
+
+    // Enrich leases with property information
+    const enrichedLeases = leases.map((lease: any) => {
+      const property: any = propertyMap.get(lease.propertyId);
+      return {
+        ...lease,
+        propertyName: property?.name || `Property ${lease.propertyId}`,
+        propertyType: property?.type,
+        propertyLocation: property?.location
+      };
+    });
+
     // Get latest analysis results
     const latestAnalysis = await prisma.analysis.findFirst({
       where: { 
@@ -150,7 +175,7 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ 
-      leases,
+      leases: enrichedLeases,
       analysis: latestAnalysis?.results || null
     }, { status: 200 });
 

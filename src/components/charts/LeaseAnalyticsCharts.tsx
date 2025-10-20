@@ -27,72 +27,126 @@ interface LeaseAnalyticsChartsProps {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 
 export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsProps) {
+  // Helper function to determine lease status
+  const getLeaseStatus = (lease: any) => {
+    if (lease.status && lease.status !== 'Unknown') {
+      return lease.status;
+    }
+    
+    // Calculate status based on lease dates
+    const endDate = new Date(lease.endDate || lease.leaseEnd || lease.lease_end);
+    const now = new Date();
+    
+    if (isNaN(endDate.getTime())) {
+      return 'Active'; // Default if no valid date
+    }
+    
+    const monthsToExpiry = (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30);
+    
+    if (monthsToExpiry < 0) {
+      return 'Expired';
+    } else if (monthsToExpiry <= 12) {
+      return 'Expiring Soon';
+    } else {
+      return 'Active';
+    }
+  };
+
   // Prepare data for charts
   const leaseStatusData = leases.reduce((acc, lease) => {
-    const status = lease.status || 'Unknown';
+    const status = getLeaseStatus(lease);
+    const rent = lease.monthlyRent || lease.rent || lease.monthly_rent || 0;
     const existing = acc.find((item: any) => item.name === status);
     if (existing) {
       existing.value += 1;
-      existing.rent += lease.rent || 0;
+      existing.rent += rent;
     } else {
       acc.push({
         name: status,
         value: 1,
-        rent: lease.rent || 0
+        rent: rent
       });
     }
     return acc;
   }, []);
 
+  // Get risk level from analysis if available, otherwise default
+  const getRiskLevel = (lease: any) => {
+    if (analysis && analysis.risk_scores) {
+      const riskScore = analysis.risk_scores.find(
+        (r: any) => r.property_id === lease.propertyId || r.property_id === lease.property_id
+      );
+      if (riskScore) {
+        return riskScore.risk_level;
+      }
+    }
+    return lease.riskLevel || 'Not Analyzed';
+  };
+
   const riskDistributionData = leases.reduce((acc, lease) => {
-    const risk = lease.riskLevel || 'Medium';
+    const risk = getRiskLevel(lease);
+    const rent = lease.monthlyRent || lease.rent || lease.monthly_rent || 0;
     const existing = acc.find((item: any) => item.name === risk);
     if (existing) {
       existing.value += 1;
-      existing.rent += lease.rent || 0;
+      existing.rent += rent;
     } else {
       acc.push({
         name: risk,
         value: 1,
-        rent: lease.rent || 0
+        rent: rent
       });
     }
     return acc;
   }, []);
 
-  const rentByPropertyData = leases.map(lease => ({
-    name: lease.propertyName?.substring(0, 15) + '...' || 'Property',
-    rent: lease.rent || 0,
-    riskScore: lease.riskScore || 0,
-    tenant: lease.tenant?.substring(0, 10) + '...' || 'Tenant'
-  }));
-
-  const leaseExpiryData = leases.map(lease => {
-    const endDate = new Date(lease.endDate);
-    const now = new Date();
-    const monthsToExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30));
+  const rentByPropertyData = leases.map(lease => {
+    const propertyName = lease.propertyName || lease.property_name || `Property ${lease.propertyId || lease.property_id}`;
+    const tenantName = lease.tenantName || lease.tenant_name || lease.tenant || 'Tenant';
+    const rent = lease.monthlyRent || lease.rent || lease.monthly_rent || 0;
     
     return {
-      name: lease.tenant?.substring(0, 10) + '...' || 'Tenant',
+      name: propertyName.length > 15 ? propertyName.substring(0, 15) + '...' : propertyName,
+      rent: rent,
+      riskScore: lease.riskScore || 0,
+      tenant: tenantName.length > 10 ? tenantName.substring(0, 10) + '...' : tenantName
+    };
+  });
+
+  const leaseExpiryData = leases.map(lease => {
+    const endDate = new Date(lease.endDate || lease.leaseEnd || lease.lease_end);
+    const now = new Date();
+    const monthsToExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24 * 30));
+    const tenantName = lease.tenantName || lease.tenant_name || lease.tenant || 'Tenant';
+    const rent = lease.monthlyRent || lease.rent || lease.monthly_rent || 0;
+    
+    return {
+      name: tenantName.length > 10 ? tenantName.substring(0, 10) + '...' : tenantName,
       monthsToExpiry: Math.max(0, monthsToExpiry),
-      rent: lease.rent || 0,
+      rent: rent,
       riskScore: lease.riskScore || 0
     };
   });
 
-  const rentTrendData = leases.map((lease, index) => ({
-    name: `Lease ${index + 1}`,
-    currentRent: lease.rent || 0,
-    riskScore: lease.riskScore || 0,
-    monthsRemaining: Math.max(0, Math.ceil((new Date(lease.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30)))
-  }));
+  const rentTrendData = leases.map((lease, index) => {
+    const rent = lease.monthlyRent || lease.rent || lease.monthly_rent || 0;
+    const endDate = new Date(lease.endDate || lease.leaseEnd || lease.lease_end);
+    const monthsRemaining = Math.max(0, Math.ceil((endDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24 * 30)));
+    
+    return {
+      name: `Lease ${index + 1}`,
+      currentRent: rent,
+      riskScore: lease.riskScore || 0,
+      monthsRemaining: monthsRemaining
+    };
+  });
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {/* Lease Status Distribution */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lease Status Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Lease Status Distribution</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
               data={leaseStatusData}
@@ -115,9 +169,9 @@ export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsP
       </div>
 
       {/* Risk Level Distribution */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Level Distribution</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Risk Level Distribution</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={riskDistributionData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -129,9 +183,9 @@ export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsP
       </div>
 
       {/* Rent by Property */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Rent Analysis by Property</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Rent Analysis by Property</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <BarChart data={rentByPropertyData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
@@ -143,9 +197,9 @@ export function LeaseAnalyticsCharts({ leases, analysis }: LeaseAnalyticsChartsP
       </div>
 
       {/* Lease Expiry Timeline */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Lease Expiry Timeline</h3>
-        <ResponsiveContainer width="100%" height={300}>
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Lease Expiry Timeline</h3>
+        <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={leaseExpiryData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="name" />
