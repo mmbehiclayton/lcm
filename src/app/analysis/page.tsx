@@ -198,7 +198,7 @@ function AnalysisContent() {
 
   // Prepare chart data
   const chartData = analysis.metrics.map(metric => ({
-    property: properties.find(p => p.propertyId === metric.propertyId)?.name || metric.propertyId,
+    property: properties.find(p => p.property_id === metric.property_id)?.name || metric.property_id,
     healthScore: Math.round(
       metric.leaseScore * 0.25 +
       metric.occupancyScore * 0.25 +
