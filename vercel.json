@@ -6,5 +6,11 @@
   },
   
   "buildCommand": "prisma generate && prisma db push && next build",
-  "framework": "nextjs"
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  }
 }
