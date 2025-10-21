@@ -6,6 +6,5 @@
   },
   
   "buildCommand": "prisma generate && prisma db push && next build",
-  "installCommand": "pnpm install",
   "framework": "nextjs"
 }
