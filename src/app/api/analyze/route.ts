@@ -57,7 +57,16 @@ export async function POST(req: NextRequest) {
     }));
 
     // Calculate individual scores with enhanced algorithms
-    const propertyScores: Array<Record<string, any>> = [];
+    const propertyScores: Array<{
+      property_id: string;
+      lease_score: number;
+      occupancy_score: number;
+      noi_score: number;
+      energy_score: number;
+      capex_score: number;
+      sustainability_score?: number;
+      market_score?: number;
+    }> = [];
     for (const property of properties) {
       const scores = calculateEnhancedPropertyScores(property, strategy);
       propertyScores.push({
