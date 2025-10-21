@@ -8,6 +8,7 @@ import { RiskDistributionChart } from '@/components/charts/RiskDistributionChart
 import { PropertyTable } from '@/components/tables/PropertyTable';
 import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, Download } from 'lucide-react';
 import { getRiskColor, getPerformanceColor } from '@/lib/utils';
+import { Property } from '@/types';
 
 interface AnalysisResult {
   portfolioHealth: number;
@@ -43,15 +44,7 @@ function AnalysisContent() {
   const analysisId = searchParams.get('analysisId');
   
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [properties, setProperties] = useState<Array<{
-    property_id: string;
-    name: string;
-    type: string;
-    location: string;
-    current_value: number;
-    noi: number;
-    occupancy_rate: number;
-  }>>([]);
+  const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<'growth' | 'hold' | 'divest'>('hold');

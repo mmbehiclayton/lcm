@@ -111,9 +111,12 @@ export async function POST(req: NextRequest) {
       recommendations: recommendations,
       property_scores: propertyScores,
       occupancy_efficiency: occupancyEfficiency,
-      sustainability_flag: sustainabilityFlag,
-      lease_maturity_exposure: leaseMaturityExposure,
-      assets
+      sustainability_flag: sustainabilityFlag === 'green',
+      lease_maturity_exposure: leaseMaturityExposure.length,
+      assets: assets.map(asset => ({
+        asset_id: asset.asset_id,
+        suggested_action: asset.recommended_action
+      }))
     };
 
     // Save analysis result to DB

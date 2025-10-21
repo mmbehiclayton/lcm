@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
     if (leaseData.length === 0) {
       console.log('No lease data found, creating mock leases for analysis');
       // Create mock leases for each property that has transactions
-      const uniquePropertyIds = [...new Set(transactionData.map(t => t.property_id))];
+      const uniquePropertyIds = Array.from(new Set(transactionData.map(t => t.property_id)));
       finalLeaseData = uniquePropertyIds.map((propertyId, index) => {
         // Use a more realistic monthly rent based on transaction amounts
         const sampleTransaction = transactionData.find(t => t.property_id === propertyId);

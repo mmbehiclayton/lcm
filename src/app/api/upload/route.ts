@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
             // Use a database transaction to ensure all records are saved
             savedRecords = await prisma.$transaction(async (tx) => {
               const records = [];
-              const propertyIds = [...new Set(cleanedData.map(t => t.property_id))];
+              const propertyIds = Array.from(new Set(cleanedData.map(t => t.property_id)));
               
               // First, ensure all properties exist
               console.log('Ensuring properties exist for IDs:', propertyIds);
@@ -332,8 +332,8 @@ export async function POST(request: NextRequest) {
             console.log(`Verification: Found ${verifyRecords.length} records in database for upload ${upload.id}`);
           } catch (error) {
             console.error('Error saving transaction data:', error);
-            console.error('Error details:', error.message);
-            console.error('Error stack:', error.stack);
+            console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+            console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
             throw error;
           }
         }

@@ -21,15 +21,6 @@ function AnalysisContent() {
   const [error, setError] = useState<string | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<'growth' | 'hold' | 'divest'>('hold');
 
-  useEffect(() => {
-    if (uploadId) {
-      fetchAnalysis();
-    } else {
-      // If no uploadId, show empty state
-      setIsLoading(false);
-    }
-  }, [uploadId, fetchAnalysis]);
-
   const fetchAnalysis = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -66,6 +57,15 @@ function AnalysisContent() {
       setIsLoading(false);
     }
   }, [uploadId, selectedStrategy]);
+
+  useEffect(() => {
+    if (uploadId) {
+      fetchAnalysis();
+    } else {
+      // If no uploadId, show empty state
+      setIsLoading(false);
+    }
+  }, [uploadId, fetchAnalysis]);
 
   const handleStrategyChange = (strategy: 'growth' | 'hold' | 'divest') => {
     setSelectedStrategy(strategy);

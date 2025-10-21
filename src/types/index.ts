@@ -5,7 +5,7 @@ export interface Property {
   name: string;
   type: 'Office' | 'Retail' | 'Industrial' | 'Residential';
   location: string;
-  purchase_price: number;
+  purchase_price?: number; // ✅ optional
   current_value: number;
   noi: number;
   occupancy_rate: number;
