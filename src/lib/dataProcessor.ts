@@ -18,7 +18,7 @@ export class DataProcessor {
         Papa.parse(fileContent, {
           header: true,
           skipEmptyLines: true,
-          complete: (results) => {
+          complete: (results: any) => {
             try {
               console.log('CSV parsing results:', results.data.length, 'records');
               console.log('Parsed data preview:', results.data.slice(0, 2));
