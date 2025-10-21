@@ -3,8 +3,9 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { PortfolioHealthChart, RiskDistributionChart } from '@/components/charts';
-import { PropertyTable } from '@/components/tables';
+import { PortfolioHealthChart } from '@/components/charts/PortfolioHealthChart';
+import { RiskDistributionChart } from '@/components/charts/RiskDistributionChart';
+import { PropertyTable } from '@/components/tables/PropertyTable';
 import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, Download } from 'lucide-react';
 import { formatCurrency, formatPercentage, getRiskColor, getPerformanceColor } from '@/lib/utils';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';

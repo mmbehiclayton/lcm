@@ -9,6 +9,13 @@ const nextConfig = {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     // Python service removed - using native analytics engine
   },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': require('path').resolve(__dirname, 'src'),
+    };
+    return config;
+  },
   async headers() {
     return [
       {
