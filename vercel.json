@@ -7,9 +7,5 @@
   
   "buildCommand": "prisma generate && prisma db push && next build",
   "installCommand": "pnpm install",
-  "framework": "nextjs",
-  "env": {
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "NEXTAUTH_URL": "@nextauth_url"
-  }
+  "framework": "nextjs"
 }
