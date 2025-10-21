@@ -15,7 +15,7 @@ interface AnalysisResult {
   performanceGrade: string;
   recommendations: string[];
   metrics: Array<{
-    propertyId: string;
+    property_id: string;
     leaseScore: number;
     occupancyScore: number;
     noiScore: number;
@@ -44,13 +44,13 @@ function AnalysisContent() {
   
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [properties, setProperties] = useState<Array<{
-    propertyId: string;
+    property_id: string;
     name: string;
     type: string;
     location: string;
-    currentValue: number;
+    current_value: number;
     noi: number;
-    occupancyRate: number;
+    occupancy_rate: number;
   }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
