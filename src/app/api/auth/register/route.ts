@@ -37,16 +37,17 @@ export async function POST(req: NextRequest) {
     });
 
     // Return success (don't return password)
-    const { password: _, ...userWithoutPassword } = user;
+    const { password, ...userWithoutPassword } = user;
     return NextResponse.json({ 
       message: 'User created successfully',
       user: userWithoutPassword 
     }, { status: 201 });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Registration error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
     return NextResponse.json({ 
-      error: error.message || 'Failed to create user' 
+      error: errorMessage 
     }, { status: 500 });
   }
 }

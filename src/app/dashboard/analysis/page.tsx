@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PortfolioHealthChart } from '@/components/charts/PortfolioHealthChart';
 import { RiskDistributionChart } from '@/components/charts/RiskDistributionChart';
 import { PropertyTable } from '@/components/tables/PropertyTable';
-import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, Download } from 'lucide-react';
-import { formatCurrency, formatPercentage, getRiskColor, getPerformanceColor } from '@/lib/utils';
+import { BarChart3, AlertTriangle, CheckCircle, Download } from 'lucide-react';
+import { getRiskColor, getPerformanceColor } from '@/lib/utils';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 function AnalysisContent() {
@@ -28,9 +28,9 @@ function AnalysisContent() {
       // If no uploadId, show empty state
       setIsLoading(false);
     }
-  }, [uploadId]);
+  }, [uploadId, fetchAnalysis]);
 
-  const fetchAnalysis = async () => {
+  const fetchAnalysis = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -65,7 +65,7 @@ function AnalysisContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [uploadId, selectedStrategy]);
 
   const handleStrategyChange = (strategy: 'growth' | 'hold' | 'divest') => {
     setSelectedStrategy(strategy);

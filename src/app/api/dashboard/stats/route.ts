@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -80,8 +80,9 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(stats, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Dashboard stats error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch dashboard stats' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dashboard stats';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

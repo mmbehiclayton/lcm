@@ -1,20 +1,27 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PortfolioHealthChart } from '@/components/charts/PortfolioHealthChart';
 import { RiskDistributionChart } from '@/components/charts/RiskDistributionChart';
 import { PropertyTable } from '@/components/tables/PropertyTable';
 import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, Download } from 'lucide-react';
-import { formatCurrency, formatPercentage, getRiskColor, getPerformanceColor } from '@/lib/utils';
+import { getRiskColor, getPerformanceColor } from '@/lib/utils';
 
 interface AnalysisResult {
   portfolioHealth: number;
   riskLevel: string;
   performanceGrade: string;
   recommendations: string[];
-  metrics: any[];
+  metrics: Array<{
+    propertyId: string;
+    leaseScore: number;
+    occupancyScore: number;
+    noiScore: number;
+    energyScore: number;
+    capexScore: number;
+  }>;
   riskFactors: {
     concentrationRisk: number;
     leaseRisk: number;
@@ -36,7 +43,15 @@ function AnalysisContent() {
   const analysisId = searchParams.get('analysisId');
   
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
-  const [properties, setProperties] = useState<any[]>([]);
+  const [properties, setProperties] = useState<Array<{
+    propertyId: string;
+    name: string;
+    type: string;
+    location: string;
+    currentValue: number;
+    noi: number;
+    occupancyRate: number;
+  }>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStrategy, setSelectedStrategy] = useState<'growth' | 'hold' | 'divest'>('hold');
@@ -48,9 +63,9 @@ function AnalysisContent() {
       // If no uploadId, show empty state
       setIsLoading(false);
     }
-  }, [uploadId]);
+  }, [uploadId, fetchAnalysis]);
 
-  const fetchAnalysis = async () => {
+  const fetchAnalysis = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -85,7 +100,7 @@ function AnalysisContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [uploadId, selectedStrategy]);
 
   const handleStrategyChange = (strategy: 'growth' | 'hold' | 'divest') => {
     setSelectedStrategy(strategy);

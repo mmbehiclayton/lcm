@@ -1,16 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, Calendar, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Building2, Upload, X, Download, BarChart3 } from 'lucide-react';
+import { FileText, Calendar, DollarSign, TrendingUp, AlertTriangle, CheckCircle, Building2, Upload, BarChart3 } from 'lucide-react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { UploadModal } from '@/components/modals/UploadModal';
 import { SearchFilter } from '@/components/common/SearchFilter';
 import { LeaseAnalyticsCharts } from '@/components/charts/LeaseAnalyticsCharts';
 
 export default function LeaseAnalysisPage() {
-  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
+  const [selectedProperty] = useState<string | null>(null);
   const [leaseData, setLeaseData] = useState<any[]>([]);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,7 +17,7 @@ export default function LeaseAnalysisPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [filteredLeases, setFilteredLeases] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const [uploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'risk-scores' | 'recommendations'>('overview');
 
   // Module configuration for upload modal

@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Save analysis result to DB
-    const createdAnalysis = await prisma.analysis.create({
+    await prisma.analysis.create({
       data: {
         userId: userId,
         uploadId: uploads[0]?.id || '', // Use first upload ID
@@ -127,9 +127,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ message: 'Analysis completed successfully', data: analysisResult }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Analysis error:', error);
-    return NextResponse.json({ error: error.message || 'Failed to perform analysis' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to perform analysis';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -148,8 +149,9 @@ export async function GET(req: NextRequest) {
     });
 
     return NextResponse.json({ analyses }, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching analyses:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch analyses' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch analyses';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

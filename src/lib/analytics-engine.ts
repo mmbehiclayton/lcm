@@ -79,6 +79,13 @@ export interface AnalysisResponse {
     sustainability_score?: number;
     market_score?: number;
   }>;
+  occupancy_efficiency: number;
+  sustainability_flag: boolean;
+  lease_maturity_exposure: number;
+  assets: Array<{
+    asset_id: string;
+    suggested_action: string;
+  }>;
 }
 
 export interface TransactionAnalysisResponse {
