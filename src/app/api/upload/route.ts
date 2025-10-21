@@ -7,6 +7,9 @@ import { DataProcessor } from '@/lib/dataProcessor';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Upload API called');

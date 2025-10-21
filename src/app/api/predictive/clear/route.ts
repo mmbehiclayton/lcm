@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * DELETE endpoint to clear all predictive modelling data for the current user
  * This includes: Analysis results, Property data, and PredictiveData records
